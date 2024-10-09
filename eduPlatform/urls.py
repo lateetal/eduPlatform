@@ -8,4 +8,7 @@ from login.views import CustomTokenObtainPairView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', include('login.urls')),
+    path('homepage/', include('homepage.urls')),
+    path('chatRoom/', include('chatRoom.urls')),
+
 ]

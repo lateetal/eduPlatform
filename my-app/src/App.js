@@ -6,6 +6,8 @@ import Login from './Login';
 import StudentHomePage from './StudentHomePage';
 import TeacherHomePage from './TeacherHomePage';
 import PrivateRoute from './PrivateRoute'; // 导入私有路由组件
+import CoursePage from './CoursePage';
+
 
 const App = () => {
     return (
@@ -13,6 +15,8 @@ const App = () => {
             <Routes>
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
+
+                {/*下面是添加登录保护的写法*/}
                 <Route
                     path="/student"
                     element={
@@ -29,6 +33,9 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
+
+
+                <Route path="/student/course/:courseNo" element={<CoursePage />} />
             </Routes>
         </Router>
     );

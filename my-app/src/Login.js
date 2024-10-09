@@ -1,7 +1,5 @@
-// src/Login.js
 import React, { useState } from 'react';
 import axios from 'axios';
-
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -18,13 +16,16 @@ const Login = () => {
                 password,
             });
 
-            localStorage.setItem('token', response.data.access); // Store token in localStorage
+            const token = response.data.access; // 获取token
+            localStorage.setItem('token', token); // 存储token
+
+            // 设置Axios默认请求头
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
             const userType = response.data.userType;
-            setMessage(JSON.stringify(response));
             // 跳转
             if (userType === 'student') {
-                 navigate('/student');
+                navigate('/student');
             } else if (userType === 'teacher') {
                 navigate('/teacher');
             }
@@ -36,10 +37,10 @@ const Login = () => {
 
     return (
         <div>
-            <h2>Login</h2>
+            <h2>用户登录</h2>
             <form onSubmit={handleSubmit}>
                 <div>
-                    <label>Username:</label>
+                    <label>学号/工号:</label>
                     <input
                         type="text"
                         value={username}
@@ -48,7 +49,7 @@ const Login = () => {
                     />
                 </div>
                 <div>
-                    <label>Password:</label>
+                    <label>密码:</label>
                     <input
                         type="password"
                         value={password}
@@ -56,7 +57,7 @@ const Login = () => {
                         required
                     />
                 </div>
-                <button type="submit">Login</button>
+                <button type="submit">登录</button>
             </form>
             {message && <p>{message}</p>}
         </div>
