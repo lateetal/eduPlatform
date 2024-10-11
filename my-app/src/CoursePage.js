@@ -131,7 +131,8 @@ const CoursePage = () => {
                 return (
                     <div>
                         <h3>讨论区</h3>
-                        {/* 在这里可以添加讨论区的实现 */}
+
+
                     </div>
                 );
             default:
