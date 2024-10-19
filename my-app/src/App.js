@@ -15,6 +15,7 @@ const App = () => {
             <Routes>
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/" element={<Login />} />
 
                 {/*下面是添加登录保护的写法*/}
                 <Route
