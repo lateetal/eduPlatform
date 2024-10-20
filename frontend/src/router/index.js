@@ -2,6 +2,8 @@ import {createWebHistory, createRouter} from "vue-router";
 import TeacherHome from "@/views/TeacherHome.vue";
 import StudentHome from "@/views/StudentHome.vue";
 import LoginPage from "@/views/LoginPage.vue";
+import CoursePage from "@/views/CoursePage.vue";
+
 
 const routes = [
     {
@@ -23,7 +25,11 @@ const routes = [
         name: "LoginPage",
         component: LoginPage
     },
-    
+    {
+      path:"/student/course/:courseNo",
+      name:"CoursePage",
+      component: CoursePage
+    },
 ];
 
 const router = createRouter({
