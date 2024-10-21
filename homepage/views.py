@@ -69,14 +69,6 @@ class TeacherHomePageView(APIView): #教师展示
         else:
             return Response({"code": 401, "message": "Authorization header missing."}, status=401)
 
-        # # 查询该学生所选的所有课程
-        # teach_class = Course.objects.filter(sno__sno=cno).select_related('cno')
-        #
-        # # 检查是否找到课程
-        # if not teach_class.exists():
-        #     return Response({"code": 404, "message": "No courses found for the given student number."}, status=404)
-        #
-        # # 提取课程信息
         courses_data = Course.objects.filter(tno_id=tno)
 
         # 使用序列化器将课程数据转换为可返回的格式

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import oss2
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -93,7 +94,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'edu',
         'USER':'root',
-        'PASSWORD':'qzx04',
+        'PASSWORD':'yumu1412',
     }
 }
 
@@ -159,7 +160,6 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 
 #阿里云oss配置 记得上传前把代码糊掉
 
-import oss2
 accessKeyId = 'LTAI5tAtNfQg5VqN22gT3Tsn'
 accessKeySecret = 'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf'
 auth = oss2.Auth(accessKeyId, accessKeySecret)
