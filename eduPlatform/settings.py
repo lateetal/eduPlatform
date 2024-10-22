@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 import oss2
 
@@ -42,12 +43,10 @@ REST_FRAMEWORK = {
     ),
 }
 #设置jwt
-import datetime
-JWT_AUTH = {
-    'JWT_SECRET_KEY': '5rP43U14UlIugWgTPWmz',#密钥 保存在此处 保证jwt安全性 不能被外人知道
-    'JWT_ALGORITHM': 'HS256',# 指定签名算法
-    'JWT_ALLOW_REFRESH': True,# 允许在jwt过期后刷新不用重新登录
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),}#设置过期时间
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),  # 设置访问 token 的过期时间为 10 分钟
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # 可以设置刷新 token 的过期时间
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -158,7 +157,7 @@ AUTHENTICATION_BACKENDS = [
 #登录重定向
 LOGIN_REDIRECT_URL = '/dashboard/'
 
-#阿里云oss配置 记得上传前把代码糊掉
+#阿里云oss配置
 
 accessKeyId = 'LTAI5tAtNfQg5VqN22gT3Tsn'
 accessKeySecret = 'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf'

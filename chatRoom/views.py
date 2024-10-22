@@ -1,3 +1,7 @@
+import uuid
+
+import oss2
+from django.http import JsonResponse
 from django.utils import timezone
 
 import jwt
@@ -14,6 +18,7 @@ import boto3
 class UploadImageView(APIView):
     def post(self, request):
         file = request.FILES.get('file')
+        print(file)
         if not file:
             return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
         oss_client = boto3.client('oss',
@@ -94,4 +99,14 @@ class showReview(APIView):
         except Discussion.DoesNotExist:
             return Response({'error':'课程未找到'},status=status.HTTP_404_NOT_FOUND)
 
+class GenerateUploadURL(APIView):
+    def get(self,request):
+        auth = oss2.Auth(
+            'LTAI5tAtNfQg5VqN22gT3Tsn',
+            'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf'
+        )
+        bucket = oss2.Bucket(auth, 'edu-platform-2024.oss-cn-beijing-internal.aliyuncs.com', 'edu-platform-2024')
+        file_name = str(uuid.uuid4()) + '.jpg'#文件名处理，保证图片命名唯一
+        url = bucket.sign_url('PUT',file_name,3600)
 
+        return JsonResponse({'url':url,'file_name':file_name})

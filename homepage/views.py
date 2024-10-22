@@ -96,18 +96,23 @@ class GetUsername(APIView):#获取用户名
             # 解码 JWT
             decoded_payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = decoded_payload['user_id']
+            userType = decoded_payload['userType']
+
+            print(userType)
 
             # 获取用户名
             user = User.objects.get(pk=user_id)
             username = user.username
 
-            return Response({'username': username})
+            return Response({'username': username,'userType':userType})
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Token has expired.')
         except jwt.InvalidTokenError:
             raise AuthenticationFailed('Invalid token.')
         except User.DoesNotExist:
             raise AuthenticationFailed('User not found.')
+
+
 
 class GetCourseDetails(APIView):
     def get(self, request,course_id):
