@@ -58,7 +58,7 @@
           localStorage.setItem('token', token)
   
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  
+
           const userType = response.data.userType
           if (userType === 'student') {
             this.$router.push('/student')

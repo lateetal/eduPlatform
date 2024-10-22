@@ -72,6 +72,20 @@ const API_URL = 'http://localhost:8000/homepage/teacher/'
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com'
 const USERNAME_URL = 'http://localhost:8000/homepage/getusername/'
 
+// 创建 Axios 实例
+const instance = axios.create();
+
+// 添加请求拦截器
+instance.interceptors.request.use(config => {
+  const token = localStorage.getItem('token'); // 从本地存储获取令牌
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
 export default {
   components:{User, LogOut},
   name: 'TeacherHome',
@@ -79,6 +93,7 @@ export default {
     return {
       subjects: [],
       username: '',
+      userType:'',
       loading: true,
       error: null,
       BUCKET_URL,
@@ -97,7 +112,7 @@ export default {
     async fetchSubjects() {
       try {
         const token = localStorage.getItem('token')
-        const response = await axios.get(API_URL, {
+        const response = await instance.get(API_URL, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -116,9 +131,16 @@ export default {
     },
     async fetchUsername() {
       try {
-        const response = await axios.get(USERNAME_URL)
+        const response = await instance.get(USERNAME_URL)
         if (response.status === 200) {
-          this.username = response.data.username
+          const {username,userType} = response.data
+
+          this.userType = userType
+          this.username = username
+
+          if(userType != 'teacher'){
+            this.error = '用户权限不足'
+          }
         } else {
           this.error = '获取用户名失败'
         }
