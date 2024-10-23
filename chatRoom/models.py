@@ -13,7 +13,7 @@ class Discussion(models.Model):
     havePic = models.BooleanField(default=False)
 
 class Review(models.Model):
-    rno = models.IntegerField(primary_key=True)
+    rno = models.AutoField(primary_key=True)
     dno = models.ForeignKey('Discussion', on_delete=models.CASCADE)
     ownerNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
     rinfo = models.TextField()

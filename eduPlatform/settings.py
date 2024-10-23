@@ -44,7 +44,7 @@ REST_FRAMEWORK = {
 }
 #设置jwt
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),  # 设置访问 token 的过期时间为 10 分钟
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # 设置访问 token 的过期时间为 10 分钟
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # 可以设置刷新 token 的过期时间
 }
 

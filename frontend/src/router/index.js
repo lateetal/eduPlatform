@@ -6,6 +6,7 @@ import CoursePage from "@/views/CoursePage.vue";
 import DiscussionBoard from "@/components/DiscussionBoard.vue";
 import Review from "@/components/Review.vue"
 import PdfViewer from "@/components/PdfViewer.vue"
+import CoursePageTeacher from "@/views/CoursePageTeacher.vue";
 
 
 const routes = [
@@ -32,6 +33,11 @@ const routes = [
       path:"/student/course/:courseNo",
       name:"CoursePage",
       component: CoursePage
+    },
+    {
+      path:"/teacher/course/:courseNo",
+      name:"CoursePageTeacher",
+      component: CoursePageTeacher
     },
     {
       path:"/teacher/course/:courseNo/discussion/",
