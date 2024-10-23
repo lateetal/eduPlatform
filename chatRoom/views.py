@@ -1,3 +1,4 @@
+import os
 import uuid
 
 import oss2
@@ -6,33 +7,15 @@ from django.utils import timezone
 
 import jwt
 from django.shortcuts import render
+from oss2.defaults import connect_timeout
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from chatRoom.models import Discussion, Review
+from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion
 from chatRoom.serializers import discussionSerializer, ReviewSerializer
 from eduPlatform import settings
-import boto3
 
-class UploadImageView(APIView):
-    def post(self, request):
-        file = request.FILES.get('file')
-        print(file)
-        if not file:
-            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
-        oss_client = boto3.client('oss',
-                                  aws_access_key_id=settings.OSS_ACCESS_KEY_ID,
-                                  aws_secret_access_key=settings.OSS_ACCESS_KEY_SECRET,
-                                  endpoint_url=settings.OSS_ENDPOINT)
-        try:
-            oss_client.upload_fileobj(file, settings.OSS_BUCKET_NAME, file.name)
-            url = f"{settings.OSS_ENDPOINT}/{settings.OSS_BUCKET_NAME}/{file.name}"
-            return Response({'url': url})
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
-
-# Create your views here.
 class showDiscussion(APIView):
     def get(self, request,course_id):
         try:
@@ -42,33 +25,65 @@ class showDiscussion(APIView):
         except Discussion.DoesNotExist:
             return Response({'error':'课程未找到'},status=status.HTTP_404_NOT_FOUND)
 
-    def post(self,request,course_id):#新建讨论
-        title = request.data['dtitle']
-        info = request.data['dinfo']
+    def post(self, request, course_id):
+        title = request.data.get('title')
+        info = request.data.get('content')
+        images = request.data.get('images')
 
-        auth_head = request.headers.get('Authorization')
-        token = auth_head.split()[1]
-        decoded_payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        owner_id = decoded_payload['user_id']
+        print(images)
 
-        print(owner_id)
-
+        # 验证标题和内容是否为空
         if not title or not info:
             return Response({'error': '标题和内容不能为空'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 获取用户信息
+        auth_head = request.headers.get('Authorization')
+        if not auth_head:
+            return Response({'error': '未提供授权信息'}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
-            new_discussion = Discussion.objects.create(dtitle=title,dinfo=info,
-                                                       postTime=timezone.now(),updateTime=timezone.now(),
-                                                       cno_id=course_id,ownerNo_id=owner_id)
+            token = auth_head.split()[1]
+            decoded_payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            owner_id = decoded_payload['user_id']
+        except (IndexError, jwt.ExpiredSignatureError, jwt.DecodeError) as e:
+            return Response({'error': '无效的授权信息'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # 创建讨论
+        try:
+            havePic = 1 if images else 0
+
+            new_discussion = Discussion.objects.create(
+                dtitle=title,
+                dinfo=info,
+                postTime=timezone.now(),
+                updateTime=timezone.now(),
+                havePic=havePic,
+                cno_id=course_id,
+                ownerNo_id=owner_id
+            )
             ser = discussionSerializer(new_discussion)
-            return Response({"code":200,"data":ser.data})
+            if images:
+                for image in images:
+                    index = image.find("/course")
+                    if index != -1:
+                        cutImage = image[index:]  # 从/cours
+                    picture = PictureDisscussion.objects.create(
+                        dno=new_discussion,  # 将新讨论实例关联到图片
+                        pfile=cutImage  # 假设 image 是已经上传并保存的图片文件路径
+                    )
+
+            return Response({"code": 200, "data": ser.data}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response({'error':str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     def delete(self,request,course_id,dno):
         try:
-            discussion = Discussion.objects.filter(dno=dno)
+            discussion = Discussion.objects.get(dno=dno)
+            if discussion.havePic == 1:
+                PictureDisscussion.objects.filter(dno=dno).delete()
+
             discussion.delete()
             return Response({"code":200,"message":'讨论已经成功删除'})
 
@@ -98,15 +113,3 @@ class showReview(APIView):
 
         except Discussion.DoesNotExist:
             return Response({'error':'课程未找到'},status=status.HTTP_404_NOT_FOUND)
-
-class GenerateUploadURL(APIView):
-    def get(self,request):
-        auth = oss2.Auth(
-            'LTAI5tAtNfQg5VqN22gT3Tsn',
-            'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf'
-        )
-        bucket = oss2.Bucket(auth, 'edu-platform-2024.oss-cn-beijing-internal.aliyuncs.com', 'edu-platform-2024')
-        file_name = str(uuid.uuid4()) + '.jpg'#文件名处理，保证图片命名唯一
-        url = bucket.sign_url('PUT',file_name,3600)
-
-        return JsonResponse({'url':url,'file_name':file_name})

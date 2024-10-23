@@ -162,8 +162,10 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 accessKeyId = 'LTAI5tAtNfQg5VqN22gT3Tsn'
 accessKeySecret = 'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf'
 auth = oss2.Auth(accessKeyId, accessKeySecret)
-endpoint = 'edu-platform-2024.oss-cn-beijing-internal.aliyuncs.com'
+endpoint = 'http://oss-cn-beijing.aliyuncs.com'
+bucketName = 'edu-platform-2024'
 
-bucket = oss2.Bucket(auth, endpoint,'edu-platform-2024')
+
+bucket = oss2.Bucket(auth,endpoint,bucketName)
 
 CORS_ALLOW_ALL_ORIGINS = True  # 允许所有来源 cors
