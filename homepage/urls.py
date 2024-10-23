@@ -8,4 +8,5 @@ urlpatterns = [
     path('teacher/',views.TeacherHomePageView.as_view(),name='teacherhomepage'),
     path('getusername/',views.GetUsername.as_view(),name='getusername'),
     path('student/course/<str:course_id>/', views.GetCourseDetails.as_view(), name='course-detail'),
+    path('course/<str:course_no>/update_intro/', views.update_course_intro, name='update_course_intro')
 ]

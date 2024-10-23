@@ -51,6 +51,55 @@
       </div>
     </div>
   </template>
+
+<template>
+  <div>
+    <li @click="selectedTab = 'introduction'" :class="{ active: selectedTab === 'introduction' }">
+      课程介绍
+    </li>
+    <div v-if="selectedTab === 'introduction'">
+      <p>{{ courseData?.cintro }}</p>
+      <button @click="isEditing = true">编辑</button>
+      <div v-if="isEditing">
+        <input v-model="newIntro" placeholder="请输入新的介绍" />
+        <button @click="updateCourseIntro">完成</button>
+        <button @click="isEditing = false">取消</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!--<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      selectedTab: 'introduction',
+      isEditing: false,
+      newIntro: '',
+      courseData: {},
+      courseNo: '你的课程编号', // 确保设置课程编号
+    };
+  },
+  methods: {
+    async updateCourseIntro() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.patch(`${API_URL}course/${this.courseNo}/update_intro/`, {
+          cintro: this.newIntro,
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        this.courseData = response.data;
+      } catch (error) {
+        console.error('Error updating course intro:', error);
+      }
+    },
+  },
+};
+</script>-->
+
   
   <script>
   import { ref, onMounted } from 'vue';
