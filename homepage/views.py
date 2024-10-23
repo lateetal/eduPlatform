@@ -123,4 +123,19 @@ class GetCourseDetails(APIView):
         except Course.DoesNotExist:
             return Response({'error':'课程未找到'},status=status.HTTP_404_NOT_FOUND)
 
+def update_course_intro(request, course_no):
+    try:
+        course = Course.objects.get(course_no=course_no)
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # 获取新的课程介绍
+    new_intro = request.data.get('cintro', None)
+    if new_intro is not None:
+        course.cintro = new_intro
+        course.save()
+
+    # 返回更新后的课程数据
+    serializer = courseSerializer(course)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
