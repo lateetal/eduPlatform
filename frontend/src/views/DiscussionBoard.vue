@@ -5,7 +5,7 @@
 
 <template>
   <div class="discussion-board">
-    <h2>讨论区</h2>
+    <h2>讨论区 {{ currentPath }}</h2>
 
     <!-- 搜索功能 -->
     <div class="search-bar">
@@ -127,8 +127,8 @@
 import axios from 'axios';
 import OSS from 'ali-oss';
 
-const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com'
-const API_URL = 'http://localhost:8000/chatRoom/0001/discussion';
+const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
+// const API_URL = `http://localhost:8000/chatRoom/1/discussion`;
 
 // 创建 Axios 实例
 const instance = axios.create();
@@ -162,6 +162,7 @@ export default {
       isEditing: false,
       editingDiscussion:{},
       selectedImage:null,
+      courseNo: this.$route.params.courseNo,
     };
   },
   created() {
@@ -171,6 +172,7 @@ export default {
   methods: {
     // 获取讨论数据
     async fetchDiscussions() {
+      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
       try {
         const response = await instance.get(API_URL);
         if (response.data.code === 200) {
@@ -236,6 +238,7 @@ export default {
       return uploadedImageUrls;
     },
     async submitPost() {
+      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
       if (!this.title || !this.content) {
         alert('请填写标题和正文！');
         return;
@@ -271,6 +274,7 @@ export default {
 
     // 删除讨论
     async deleteDiscussion(dno) {
+      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
       if (confirm('确定要删除该讨论吗？')) { // 确认提示
         try {
           const response = await instance.delete(`${API_URL}/${dno}`); // 使用 dno 进行删除请求
@@ -302,6 +306,7 @@ export default {
 
     // 更新讨论
     async updateDiscussion() {
+      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
       if (confirm('确定要保存更改吗？')) {
         try {
           const response = await instance.put(`${API_URL}/${this.editingDiscussion.dno}`, {

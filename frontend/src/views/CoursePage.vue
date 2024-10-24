@@ -58,7 +58,7 @@
                 <el-icon><ChatDotRound /></el-icon>
                 <span>答疑讨论</span>
               </template>
-              <el-menu-item index="4-1">讨论区</el-menu-item>
+              <el-menu-item index="4-1" @click="goDiscussion">讨论区</el-menu-item>
               <el-menu-item index="4-2" @click="selectedTab = 'AIhelper'">AI问答</el-menu-item>
             </el-sub-menu>
 
@@ -119,7 +119,7 @@
   <script>
   import { ref, onMounted } from 'vue';
   import axios from 'axios';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
   
   const API_URL = 'http://localhost:8000/homepage/';
@@ -135,6 +135,7 @@
 
     setup() {
       const route = useRoute();
+      const router = useRouter();
       const courseNo = route.params.courseNo;
       const courseData = ref(null);
       const selectedTab = ref('introduction');
@@ -157,6 +158,10 @@
       const handleSelect = (key) => {
         selectedTab.value = key;
       };
+
+      const goDiscussion = () => {
+        router.push(`/course/${courseNo}/discussion/`);
+      };
   
       onMounted(() => {
         fetchCourseData();
@@ -166,6 +171,7 @@
         courseData,
         selectedTab,
         handleSelect,
+        goDiscussion,
       };
     }
   };
