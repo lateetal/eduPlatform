@@ -119,26 +119,27 @@ class Favorites(APIView):
 
         return Response({"code":200,"data":ser.data})
 
-    def post(self, request,dno):
+    def post(self, request, dno):
         user_id, user_type = extract_user_info_from_auth(request)
-        existing_favorite = chatRoom.models.Favorite.objects.filter(userNo=user_id, dno=dno).first()
+
+        # 检查用户是否已经收藏
+        existing_favorite = Favorite.objects.filter(userNo=user_id, dno=dno).first()
         if existing_favorite:
-            return Response({'detail': '已经收藏此帖子了'}, status=status.HTTP_400_BAD_REQUEST)
+            # 如果已存在，则删除该收藏
+            existing_favorite.delete()
+            return Response({"code": 200, "message": '收藏已经成功删除'})
+
+        # 如果不存在，则继续处理创建逻辑
         try:
             discussion = chatRoom.models.Discussion.objects.get(dno=dno)
             user = User.objects.get(pk=user_id)
         except chatRoom.models.Discussion.DoesNotExist:
-            return Response({'detail':'讨论不存在'},status=status.HTTP_404_NOT_FOUND)
+            return Response({"code": 404, "message": '讨论不存在'})
         except User.DoesNotExist:
-            return Response({'detail':'用户不存在'},status=status.HTTP_404_NOT_FOUND)
+            return Response({"code": 404, "message": '用户不存在'})
 
-        favorite = chatRoom.models.Favorite.objects.create(userNo=user, dno=discussion)
+        # 创建 Favorite 实例
+        favorite = Favorite.objects.create(userNo=user, dno=discussion)
         serializer = FavoriteSerializer(favorite)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request,dno):
-        user_id, user_type = extract_user_info_from_auth(request)
-        favorite = chatRoom.models.Favorite.objects.get(userNo=user_id, dno=dno).delete()
-        return Response({"code": 200, "message": '收藏已经成功删除'})
-
 

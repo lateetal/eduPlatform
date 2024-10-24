@@ -35,7 +35,9 @@
             <p>发表于：{{ formatDate(comment.postTime) }}</p>
             <p>点赞数：{{ comment.likeNum }}</p>
             <button @click="deleteComment(comment.rno)">删除</button>
-            <button @click="likeComment(comment.rno)">点赞</button>
+            <button @click="likeComment(comment)">
+               {{ comment.is_liked ? '取消点赞':'点赞'}}
+            </button>
             <!-- 添加评论图片展示逻辑 -->
             <div v-if="comment.pictures && comment.pictures.length">
                 <h4>评论图片：</h4>
@@ -134,21 +136,16 @@ export default {
       this.loading = true; // 开始加载
       this.error = null;   // 清除之前的错误
       try {
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error(`网络错误: ${response.statusText}`);
-        }
-        const data = await response.json();
-        this.discussion = data.data; // 更新讨论数据，假设后端返回的数据格式符合预期
+        const response = await instance.get(API_URL); // 调用API获取数据
+        this.discussion = response.data.data; // 更新讨论数据，注意访问data属性
 
-        console.log(data)
+        console.log(this.discussion); // 打印讨论数据用于调试
       } catch (err) {
         this.error = `获取讨论详情失败: ${err.message}`; // 捕获并显示错误信息
       } finally {
         this.loading = false; // 加载结束
       }
     },
-
     // 格式化日期
     formatDate(dateString) {
       const options = {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'};
@@ -229,26 +226,29 @@ export default {
     },
 
     async deleteComment(commentId) {
-    try {
-      const response = await axios.delete(`${API_URL}/${commentId}`);
-      if (response.status === 200) {
-        this.discussion.reviews = this.discussion.reviews.filter(comment => comment.rno !== commentId);
+      try {
+        const response = await instance.delete(`${API_URL}/${commentId}`);
+        if (response.status === 200) {
+          this.discussion.reviews = this.discussion.reviews.filter(comment => comment.rno !== commentId);
+        }
+      } catch (err) {
+        this.error = `删除评论失败: ${err.message}`;
       }
-    } catch (err) {
-      this.error = `删除评论失败: ${err.message}`;
-    }
-  }
+    },
+
+    async likeComment(comment) {
+      const API_URL = 'http://localhost:8000/chatRoom/Like'
+      try {
+        const response = await instance.post(`${API_URL}/${comment.rno}`);
+        if (response.status === 200) {
+            alert('操作成功');
+            await this.fetchDiscussionDetail()
+        }
+      } catch (err) {
+        this.error = `操作失败: ${err.message}`;
+      }
+    },
   },
-  async likeComment(commentId){
-    try {
-      const response = await axios.delete(`${API_URL}/${commentId}`);
-      if (response.status === 200) {
-        this.discussion.reviews = this.discussion.reviews.filter(comment => comment.rno !== commentId);
-      }
-    } catch (err) {
-      this.error = `删除评论失败: ${err.message}`;
-    }
-  }
 };
 </script>
 

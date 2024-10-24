@@ -1,10 +1,12 @@
 from rest_framework import serializers
 
+import chatRoom
 from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite
 
-
+#课程中讨论的展示
 class discussionSerializer(serializers.ModelSerializer):
     pictures = serializers.SerializerMethodField()
+    is_favourited = serializers.SerializerMethodField()
 
     class Meta:
         model = Discussion
@@ -15,8 +17,18 @@ class discussionSerializer(serializers.ModelSerializer):
             return PictureDisscussionSerializer(pictures,many=True).data
         return []
 
+    def get_is_favourited(self, obj):
+        user_id = self.context.get('user_id')
+        if user_id is not None:
+            return Favorite.objects.filter(dno=obj,userNo_id=user_id).exists()
+        return False
+
+#回帖详细信息
 class ReviewSerializer(serializers.ModelSerializer):
+
+
     pictures = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
@@ -26,6 +38,11 @@ class ReviewSerializer(serializers.ModelSerializer):
             pictures = PictureReview.objects.filter(rno=obj)
             return PictureDisscussionSerializer(pictures,many=True).data
         return []
+    def get_is_liked(self, obj):
+        user_id = self.context.get('user_id')
+        if user_id is not None:
+            return chatRoom.models.Like.objects.filter(rno=obj,userNo_id=user_id).exists()
+        return False
 
 class discussionDetailSerializer(discussionSerializer):
     reviews = ReviewSerializer(many=True, read_only=True)

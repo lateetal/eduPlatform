@@ -1,5 +1,6 @@
 import os
 import uuid
+from lib2to3.fixes.fix_input import context
 
 import oss2
 from django.http import JsonResponse
@@ -17,7 +18,6 @@ import chatRoom
 from chatRoom import models
 from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion,Like
 from chatRoom.serializers import discussionSerializer, ReviewSerializer
-from eduPlatform import settings
 
 from homepage.views import extract_user_info_from_auth
 from login.models import User
@@ -26,8 +26,9 @@ from login.models import User
 class showDiscussion(APIView):
     def get(self, request,course_id):
         try:
+            user_id, user_type = extract_user_info_from_auth(request)
             discussion = Discussion.objects.filter(cno_id=course_id)
-            ser = discussionSerializer(discussion, many=True)
+            ser = discussionSerializer(discussion, context={'user_id':user_id}, many=True)
             return Response({"code":200,"data":ser.data})
         except Discussion.DoesNotExist:
             return Response({'error':'课程未找到'},status=status.HTTP_404_NOT_FOUND)
@@ -99,11 +100,12 @@ class showDiscussion(APIView):
 class showReview(APIView):
     def get(self, request,course_id,dno):
         try:
+            user_id, user_type = extract_user_info_from_auth(request)
             discussion = Discussion.objects.get(dno=dno)
             reviews = Review.objects.filter(dno_id=dno)
             disSer = discussionSerializer(discussion)
             disData = disSer.data
-            disData['reviews'] = ReviewSerializer(reviews,many = True).data
+            disData['reviews'] = ReviewSerializer(reviews, context={'user_id':user_id},many = True).data
 
             return Response({"code":200,"data":disData})
 
@@ -118,8 +120,6 @@ class showReview(APIView):
             return Response({'error': '内容不能为空'}, status=status.HTTP_400_BAD_REQUEST)
 
         owner_id, user_type = extract_user_info_from_auth(request)
-
-
 
         # 创建讨论
         try:
@@ -187,10 +187,15 @@ class Like(APIView):
 
         if existing_like:
             # 如果存在，则删除点赞
+            review.likeNum = review.likeNum - 1
+            review.save()
+            # ser = ReviewSerializer(review)
             existing_like.delete()
-            return Response({'message': '取消点赞成功'}, status=status.HTTP_200_OK)
+            return Response({"code": 200, "message": '取消点赞成功'})
         else:
             # 如果不存在，则创建新的点赞
+            review.likeNum = review.likeNum + 1
+            review.save()
             new_like = models.Like.objects.create(userNo=user, rno=review)
-            return Response({'message': '点赞成功'}, status=status.HTTP_201_CREATED)
+            return Response({"code": 200, "message": '点赞成功'})
 
