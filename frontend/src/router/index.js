@@ -8,6 +8,7 @@ import Review from "@/components/Review.vue"
 import PdfViewer from "@/components/PdfViewer.vue"
 import CoursePageTeacher from "@/views/CoursePageTeacher.vue";
 import DiscussionStu from "@/views/DiscussionStu.vue";
+import PersonalHome from "@/views/PersonalHome.vue";
 
 
 const routes = [
@@ -59,6 +60,11 @@ const routes = [
       path:"/student/course/0001/outline",
       name:"PdfViewer",
       component: PdfViewer
+    },
+    {
+      path:"/home",
+      name:"PersonalHome",
+      component: PersonalHome
     },
 ];
 

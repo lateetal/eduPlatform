@@ -5,12 +5,12 @@
       <div class="user-info">
         <img src="@/assets/avatar.jpg" alt="avatar" class="avatar" />
         <span>{{ username }} (学生)</span>
-        <button class="btn btn-ghost">
-          <User class="icon-user" />
+        <button class="btn btn-ghost" @click="goHome">
+          <el-icon><User /></el-icon>
           个人中心
         </button>
-        <button class="btn btn-ghost">
-          <LogOut class="icon-logout" />
+        <button class="btn btn-ghost" @click="logout" >
+          <el-icon  ><TopRight /></el-icon>
           安全退出
         </button>
       </div>
@@ -18,9 +18,9 @@
 
     <main class="main-content">
       <div class="course-list">
-        <h2>欢迎, {{ username }}!</h2>
+        <h2 v-if="username">欢迎, {{ username }}!</h2>
         <div v-if="loading">加载中...</div>
-        <div v-else-if="error" class="error">发生错误: {{ error }}</div>
+        <div v-else-if="error" class="error">发生错误</div>
         <div v-else>
           <div v-if="subjects.length > 0" class="course-grid">
             <div v-for="(subject, index) in subjects" :key="index" class="course-card">
@@ -66,7 +66,8 @@
 
 <script>
 import axios from 'axios'
-import { User, LogOut } from 'lucide-vue-next'
+import { User, TopRight } from '@element-plus/icons-vue';
+import {ElMessage} from 'element-plus'
 
 const API_URL = 'http://localhost:8000/homepage/student/'
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com'
@@ -87,7 +88,7 @@ instance.interceptors.request.use(config => {
 });
 
 export default {
-  components:{User, LogOut},
+  components:{User, TopRight},
   name: 'StudentHome',
   data() {
     return {
@@ -124,6 +125,7 @@ export default {
           this.error = '获取科目失败'
         }
       } catch (err) {
+        ElMessage.error('请先登录')
         this.error = err.message
       } finally {
         this.loading = false
@@ -151,6 +153,13 @@ export default {
     },
     handleCourseClick(courseNo) {
       this.$router.push(`/student/course/${courseNo}/`)
+    },
+    logout(){
+      localStorage.removeItem('token');
+      this.$router.push('/login')
+    },
+    goHome(){
+      this.$router.push('/home')
     }
   }
 }
