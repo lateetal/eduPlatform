@@ -1,3 +1,0 @@
-<template>
-    discussion stu
-</template>

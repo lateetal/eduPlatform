@@ -151,7 +151,7 @@ export default {
       }
     },
     handleCourseClick(courseNo) {
-      this.$router.push(`/teacher/course/${courseNo}/`)
+      this.$router.push(`/course/${courseNo}/`)
     },
     logout(){
       localStorage.removeItem('token');

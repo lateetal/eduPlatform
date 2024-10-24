@@ -6,8 +6,6 @@ import CoursePage from "@/views/CoursePage.vue";
 import DiscussionBoard from "@/views/DiscussionBoard.vue";
 import Review from "@/components/Review.vue"
 import PdfViewer from "@/components/PdfViewer.vue"
-import CoursePageTeacher from "@/views/CoursePageTeacher.vue";
-import DiscussionStu from "@/views/DiscussionStu.vue";
 import PersonalHome from "@/views/PersonalHome.vue";
 
 
@@ -32,32 +30,22 @@ const routes = [
         component: LoginPage
     },
     {
-      path:"/student/course/:courseNo",
+      path:"/course/:courseNo",
       name:"CoursePage",
       component: CoursePage
     },
     {
-      path:"/teacher/course/:courseNo",
-      name:"CoursePageTeacher",
-      component: CoursePageTeacher
-    },
-    {
-      path:"/teacher/course/:courseNo/discussion/",
+      path:"/course/:courseNo/discussion/",
       name:"DiscussionBoard",
       component: DiscussionBoard
     },
     {
-      path:"/student/course/:courseNo/discussion/",
-      name:"DiscussionStu",
-      component: DiscussionStu
-    },
-    {
-      path:"/teacher/course/:courseNo/discussion/:dno",
+      path:"/course/:courseNo/discussion/:dno",
       name:"Review",
       component: Review
     },
     {
-      path:"/student/course/0001/outline",
+      path:"/course/0001/outline",
       name:"PdfViewer",
       component: PdfViewer
     },

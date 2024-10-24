@@ -122,7 +122,7 @@
   import { useRoute } from 'vue-router';
   import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
   
-  const API_URL = 'http://localhost:8000/homepage/student/';
+  const API_URL = 'http://localhost:8000/homepage/';
   
   export default {
     components:{
