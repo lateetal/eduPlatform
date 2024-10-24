@@ -79,7 +79,10 @@
           </div>
           <div v-if="selectedTab === 'outline'" class="course-outline">
             <h2>教学大纲</h2>
-            <p>{{ courseData?.data?.coutline || 'coutline' }}</p>
+            <div v-if="courseData?.data?.coutline" class="pdf-container">
+              
+            </div>
+            <p v-else>No PDF available</p>
           </div>
           <div v-if="selectedTab === 'calendar'" class="course-calendar">
             <h2>教学日历</h2>
@@ -121,7 +124,7 @@
   import axios from 'axios';
   import { useRoute, useRouter } from 'vue-router';
   import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
-  
+
   const API_URL = 'http://localhost:8000/homepage/';
   
   export default {
@@ -247,5 +250,16 @@
     flex-grow: 1;
     padding: 20px;
   }
+
+  .pdf-container {
+  width: 100%;
+  height: 600px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+}
+
+.pdf-container iframe {
+  border: none;
+}
   
   </style>

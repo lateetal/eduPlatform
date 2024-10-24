@@ -110,6 +110,26 @@ export default {
     this.fetchUsername()
   },
   methods: {
+    async fetchUsername() {
+      try {
+        const response = await instance.get(USERNAME_URL)
+        if (response.status === 200) {
+          const { username,userType } = response.data; // 解构赋值获取数据
+
+          this.username = username
+          this.userType = userType
+
+          if(userType != 'student'){
+            this.error = '用户权限不足'
+          }
+
+        } else {
+          this.error = '获取用户名失败'
+        }
+      } catch (err) {
+        this.error = err.message
+      }
+    },
     async fetchSubjects() {
       try {
         const token = localStorage.getItem('token')
@@ -131,26 +151,7 @@ export default {
         this.loading = false
       }
     },
-    async fetchUsername() {
-      try {
-        const response = await instance.get(USERNAME_URL)
-        if (response.status === 200) {
-          const { username,userType } = response.data; // 解构赋值获取数据
-
-          this.username = username
-          this.userType = userType
-
-          if(userType != 'student'){
-            this.error = '用户权限不足'
-          }
-
-        } else {
-          this.error = '获取用户名失败'
-        }
-      } catch (err) {
-        this.error = err.message
-      }
-    },
+    
     handleCourseClick(courseNo) {
       this.$router.push(`/course/${courseNo}/`)
     },
