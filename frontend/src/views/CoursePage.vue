@@ -2,120 +2,142 @@
     <div class="course-page">
       <header class="course-header">
         <div class="header-left">
-          <h1 class="course-title">{{ courseData?.data?.cname || '机器学习' }}</h1>
+          <h1 class="course-title">{{ courseData?.data?.cname || 'cname' }}</h1>
           <span class="course-info">
-            主讲教师: {{ courseData?.data?.teacher?.tname || '张教授' }} |
-            课程编号: {{ courseData?.data?.course_no || 'M310006B' }} |
-            课序号: {{ courseData?.data?.course_class || '02' }}
+            主讲教师: {{ courseData?.data?.teacher?.tname || 'tname' }} |
+            课程编号: {{ courseData?.data?.course_no || 'course_no' }} |
+            课序号: {{ courseData?.data?.course_class || 'course_class' }}
           </span>
-        </div>
-        <div class="header-right">
-          <span>学期: {{ semester }}</span>
-          <span>当前教学周: 第{{ currentWeek }}周</span>
         </div>
       </header>
       <div class="course-content">
-        <aside class="sidebar">
-          <h2>课程信息</h2>
-          <ul>
-            <li @click="selectedTab = 'introduction'" :class="{ active: selectedTab === 'introduction' }">课程介绍</li>
-            <li @click="selectedTab = 'syllabus'" :class="{ active: selectedTab === 'syllabus' }">教学大纲</li>
-            <li @click="selectedTab = 'calendar'" :class="{ active: selectedTab === 'calendar' }">教学日历</li>
-            <li @click="selectedTab = 'notification'" :class="{ active: selectedTab === 'notification' }">课程通知</li>
-            <li @click="selectedTab = 'teacher'" :class="{ active: selectedTab === 'teacher' }">教师信息</li>
-            <li @click="selectedTab = 'mygroup'" :class="{ active: selectedTab === 'mygroup' }">我的分组</li>
-          </ul>
-          <h2>课程资源</h2>
-          <ul>
-            <li>课程资源</li>
-            <li>课程视频</li>
-          </ul>
-          <h2>课程考核</h2>
-          <ul>
-            <li>作业</li>
-            <li>课程报告</li>
-            <li>实验</li>
-            <li>平时测验</li>
-            <li>结课考核</li>
-          </ul>
-          <h2>答疑讨论</h2>
-          <h2>学习档案</h2>
-        </aside>
+        <el-aside width="250px" class="sidebar">
+          <el-menu
+            :default-active="selectedTab"
+            class="sidebar-menu"
+            @select="handleSelect"
+          >
+            <el-sub-menu index="1">
+              <template #title>
+                <el-icon><Location /></el-icon>
+                <span>课程信息</span>
+              </template>
+              <el-menu-item index="1-1" @click="selectedTab = 'introduction'">
+                课程介绍</el-menu-item>
+              <el-menu-item index="1-2" @click="selectedTab = 'outline'">
+                教学大纲</el-menu-item>
+              <el-menu-item index="1-3" @click="selectedTab = 'calendar'">
+                教学日历</el-menu-item>
+              <el-menu-item index="1-4" @click="selectedTab = 'professor'">
+                教师信息</el-menu-item>
+            </el-sub-menu>
+
+            <el-sub-menu index="2">
+              <template #title>
+                <el-icon><Folder /></el-icon>
+                <span>课程资源</span>
+              </template>
+              <el-menu-item index="2-1" @click="selectedTab = 'ppts'">
+                课件</el-menu-item>
+              <el-menu-item index="2-2" @click="selectedTab = 'papers'">
+                历年试题库</el-menu-item>
+              <el-menu-item index="2-3" @click="selectedTab = 'exercises'">
+                习题库</el-menu-item>
+            </el-sub-menu>
+
+            <el-sub-menu index="3">
+              <template #title>
+                <el-icon><DataBoard /></el-icon>
+                <span>课程考核</span>
+              </template>
+              <el-menu-item index="3-1" @click="selectedTab = 'homework'">作业</el-menu-item>
+            </el-sub-menu>
+
+            <el-sub-menu index="4">
+              <template #title>
+                <el-icon><ChatDotRound /></el-icon>
+                <span>答疑讨论</span>
+              </template>
+              <el-menu-item index="4-1">讨论区</el-menu-item>
+              <el-menu-item index="4-2" @click="selectedTab = 'AIhelper'">AI问答</el-menu-item>
+            </el-sub-menu>
+
+            <el-sub-menu index="5">
+              <template #title>
+                <el-icon><Bell /></el-icon>
+                <span>课程通知</span>
+              </template>
+              <el-menu-item index="5-1" @click="selectedTab = 'notice'">通知</el-menu-item>
+            </el-sub-menu>
+          </el-menu>
+        </el-aside>
+          
         <main class="main-content">
           <div v-if="selectedTab === 'introduction'" class="course-intro">
-            <h2>课程简介</h2>
-            <p>{{ courseData?.data?.cintro || '《机器学习》是软件工程专业的一门专业核心必修课。理论与实践相结合，旨在培养学生运用所学的机器学习理论、方法及算法，分析和解决软件工程问题，本课程为软件工程专业本科生在后续方向必选课程中提供强力支撑。在人才培养方面占有重要的地位。本课程系统地介绍机器学习的经典方法与应用现状，线性模型、决策树、感知机、支持向量机、贝叶斯分类器、集成学习、聚类、降维、半监督学习等。此外，本课程注重理论教学与实践的结合，注重学生实践能力的培养，通过设立实践环节来巩固学生对于机器学习算法的正确应用，使学生体会机器学习广泛的应用场景。' }}</p>
+            <h2>课程介绍</h2>
+            <p>{{ courseData?.data?.cintro || 'cintro' }}</p>
           </div>
-          <!-- Add other content sections for different tabs here -->
+          <div v-if="selectedTab === 'outline'" class="course-outline">
+            <h2>教学大纲</h2>
+            <p>{{ courseData?.data?.coutline || 'coutline' }}</p>
+          </div>
+          <div v-if="selectedTab === 'calendar'" class="course-calendar">
+            <h2>教学日历</h2>
+            <p>{{ courseData?.data?.calendar || 'calendar' }}</p>
+          </div>
+          <div v-if="selectedTab === 'professor'" class="course-professor">
+            <h2>教师信息</h2>
+            <p>{{ courseData?.data?.teacher?.tname || 'tname'}}</p>
+          </div>
+
+          <div v-if="selectedTab === 'ppts'" class="course-ppts">
+            <h2>课件</h2>
+          </div>
+          <div v-if="selectedTab === 'papers'" class="course-papers">
+            <h2>历年试题库</h2>
+          </div>
+          <div v-if="selectedTab === 'exercises'" class="course-exercises">
+            <h2>习题库</h2>
+          </div>
+
+          <div v-if="selectedTab === 'homework'" class="course-homework">
+            <h2>作业</h2>
+          </div>
+
+          <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
+            <h2>AI助手</h2>
+          </div>
+
+          <div v-if="selectedTab === 'notice'" class="course-notice">
+            <h2>通知</h2>
+          </div>
         </main>
       </div>
     </div>
   </template>
 
-<template>
-  <div>
-    <li @click="selectedTab = 'introduction'" :class="{ active: selectedTab === 'introduction' }">
-      课程介绍
-    </li>
-    <div v-if="selectedTab === 'introduction'">
-      <p>{{ courseData?.cintro }}</p>
-      <button @click="isEditing = true">编辑</button>
-      <div v-if="isEditing">
-        <input v-model="newIntro" placeholder="请输入新的介绍" />
-        <button @click="updateCourseIntro">完成</button>
-        <button @click="isEditing = false">取消</button>
-      </div>
-    </div>
-  </div>
-</template>
-
-<!--<script>
-import axios from 'axios';
-
-export default {
-  data() {
-    return {
-      selectedTab: 'introduction',
-      isEditing: false,
-      newIntro: '',
-      courseData: {},
-      courseNo: '你的课程编号', // 确保设置课程编号
-    };
-  },
-  methods: {
-    async updateCourseIntro() {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.patch(`${API_URL}course/${this.courseNo}/update_intro/`, {
-          cintro: this.newIntro,
-        }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        this.courseData = response.data;
-      } catch (error) {
-        console.error('Error updating course intro:', error);
-      }
-    },
-  },
-};
-</script>-->
-
-  
   <script>
   import { ref, onMounted } from 'vue';
   import axios from 'axios';
   import { useRoute } from 'vue-router';
+  import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
   
   const API_URL = 'http://localhost:8000/homepage/student/';
   
   export default {
+    components:{
+      Location,
+      Folder,
+      ChatDotRound,
+      DataBoard,
+      Bell,
+    },
+
     setup() {
       const route = useRoute();
       const courseNo = route.params.courseNo;
       const courseData = ref(null);
       const selectedTab = ref('introduction');
-      const semester = ref('2024-2025第一学期');
-      const currentWeek = ref(6);
   
       const fetchCourseData = async () => {
         try {
@@ -131,6 +153,10 @@ export default {
           console.error('Error fetching course data:', error);
         }
       };
+
+      const handleSelect = (key) => {
+        selectedTab.value = key;
+      };
   
       onMounted(() => {
         fetchCourseData();
@@ -139,8 +165,7 @@ export default {
       return {
         courseData,
         selectedTab,
-        semester,
-        currentWeek
+        handleSelect,
       };
     }
   };
@@ -174,11 +199,6 @@ export default {
   .course-info {
     font-size: 14px;
     margin-top: 5px;
-  }
-  
-  .header-right {
-    text-align: right;
-    font-size: 14px;
   }
   
   .header-right span {
@@ -222,12 +242,4 @@ export default {
     padding: 20px;
   }
   
-  .course-intro h2 {
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
-  
-  .course-intro p {
-    line-height: 1.6;
-  }
   </style>

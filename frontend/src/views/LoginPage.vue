@@ -84,7 +84,7 @@
   background-size: cover; /* 7 */
   background-position: center; /* 8 */
   background-repeat: no-repeat; /* 9 */
-  margin-top: 10%; /* 10: 向下偏移 */
+  margin-top:3%; /* 10: 向下偏移 */
 }
 
 .login-card {

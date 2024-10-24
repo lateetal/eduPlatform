@@ -3,10 +3,11 @@ import TeacherHome from "@/views/TeacherHome.vue";
 import StudentHome from "@/views/StudentHome.vue";
 import LoginPage from "@/views/LoginPage.vue";
 import CoursePage from "@/views/CoursePage.vue";
-import DiscussionBoard from "@/components/DiscussionBoard.vue";
+import DiscussionBoard from "@/views/DiscussionBoard.vue";
 import Review from "@/components/Review.vue"
 import PdfViewer from "@/components/PdfViewer.vue"
 import CoursePageTeacher from "@/views/CoursePageTeacher.vue";
+import DiscussionStu from "@/views/DiscussionStu.vue";
 
 
 const routes = [
@@ -43,6 +44,11 @@ const routes = [
       path:"/teacher/course/:courseNo/discussion/",
       name:"DiscussionBoard",
       component: DiscussionBoard
+    },
+    {
+      path:"/student/course/:courseNo/discussion/",
+      name:"DiscussionStu",
+      component: DiscussionStu
     },
     {
       path:"/teacher/course/:courseNo/discussion/:dno",
