@@ -108,6 +108,7 @@ export default {
     return {
       BUCKET_URL,
       API_URL,
+      // dno:null,
       discussion: {}, // 存储讨论详情
       newComment: '',  // 新评论内容
       loading: false,  // 加载状态
@@ -128,7 +129,7 @@ export default {
   },
   created() {
     this.initOSSClient();
-    // const dno = this.$route.params.dno; // 从路由参数中获取讨论ID
+    // this.dno = this.$route.params.dno; // 从路由参数中获取讨论ID
     this.fetchDiscussionDetail(); // 获取讨论详情
   },
   methods: {
@@ -136,7 +137,11 @@ export default {
       this.loading = true; // 开始加载
       this.error = null;   // 清除之前的错误
       try {
-        const response = await instance.get(API_URL); // 调用API获取数据
+        const dno = this.$route.params.dno;
+        const courseNo = this.$route.params.courseNo;
+        const API_URL = 'http://localhost:8000/chatRoom/';
+
+        const response = await instance.get(`${API_URL}${courseNo}/discussion/${dno}/review`); // 调用API获取数据
         this.discussion = response.data.data; // 更新讨论数据，注意访问data属性
 
         console.log(this.discussion); // 打印讨论数据用于调试
