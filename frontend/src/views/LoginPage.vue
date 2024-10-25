@@ -10,20 +10,20 @@
       <div class="right-side">
         <form @submit.prevent="handleSubmit" class="login-form">
           <div class="input-group">
-            <UserIcon class="input-icon" />
+            <el-icon class="input-icon"><User /></el-icon>
             <input type="text" v-model="username" placeholder="请输入工号/学号" required />
           </div>
           <div class="input-group">
-            <LockIcon class="input-icon" />
+            <el-icon class="input-icon"><Lock /></el-icon>
             <input type="password" v-model="password" placeholder="请输入密码" required />
           </div>
           <div class="input-group">
-            <ShieldCheckIcon class="input-icon" />
+            <el-icon class="input-icon"><Key /></el-icon>
             <input type="text" v-model="captcha" placeholder="请输入验证码" required />
             <span class="captcha">4997</span>
           </div>
           <button type="submit" class="login-btn">登录</button>
-          <a href="#" class="forgot-password">忘记密码?</a>
+          <!-- <a href="#" class="forgot-password">忘记密码?</a> -->
         </form>
       </div>
     </div>
@@ -33,10 +33,10 @@
 
 <script>
   import axios from 'axios'
-  import { UserIcon, LockIcon, ShieldCheckIcon} from 'lucide-vue-next'
+  import { User,  Lock, Key} from '@element-plus/icons-vue';
   
   export default {
-    components:{UserIcon, LockIcon, ShieldCheckIcon},
+    components:{ User, Lock, Key },
     name: 'LoginPage',
     data() {
       return {

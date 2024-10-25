@@ -33,7 +33,7 @@ INSTALLED_APPS = [#在此处添加自己的应用
     'corsheaders',#前后端连接 跨域
     'login',
     'homepage',
-    'chatRoom'
+    'chatRoom',
 ]
 
 #登录验证

@@ -11,7 +11,7 @@
         </button>
         <button class="btn btn-ghost" @click="logout" >
           <el-icon  ><TopRight /></el-icon>
-          安全退出
+          退出
         </button>
       </div>
     </header>

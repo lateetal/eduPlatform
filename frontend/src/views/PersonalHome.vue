@@ -7,12 +7,12 @@
           <span v-if="userType=='student'">{{ username }} (学生)</span>
           <span v-else>{{ username }} (教师)</span>
           <button class="btn btn-ghost" @click="goHome">
-              <el-icon><School /></el-icon>
-              课程主页
+            <el-icon><School /></el-icon>
+            课程主页
           </button>
           <button class="btn btn-ghost" @click="logout" >
             <el-icon  ><TopRight /></el-icon>
-            安全退出
+            退出
           </button>
         </div>
       </header>
@@ -117,7 +117,7 @@
     return config;
     }, error => {
     return Promise.reject(error);
-});
+  });
   
   
   export default{
