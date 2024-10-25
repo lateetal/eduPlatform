@@ -5,7 +5,6 @@ import LoginPage from "@/views/LoginPage.vue";
 import CoursePage from "@/views/CoursePage.vue";
 import DiscussionBoard from "@/views/DiscussionBoard.vue";
 import Review from "@/components/Review.vue"
-import PdfViewer from "@/components/PdfViewer.vue"
 import PersonalHome from "@/views/PersonalHome.vue";
 
 
@@ -43,11 +42,6 @@ const routes = [
       path:"/course/:courseNo/discussion/:dno",
       name:"Review",
       component: Review
-    },
-    {
-      path:"/course/0001/outline",
-      name:"PdfViewer",
-      component: PdfViewer
     },
     {
       path:"/home",

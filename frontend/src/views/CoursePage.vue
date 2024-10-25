@@ -80,7 +80,7 @@
           <div v-if="selectedTab === 'outline'" class="course-outline">
             <h2>教学大纲</h2>
             <div v-if="courseData?.data?.coutline" class="pdf-container">
-              
+              <VuePdfEmbed annotation-layer text-layer source="https://edu-platform-2024.oss-cn-beijing.aliyuncs.com/course/outline/0001-outline.pdf" />
             </div>
             <p v-else>No PDF available</p>
           </div>
@@ -124,6 +124,11 @@
   import axios from 'axios';
   import { useRoute, useRouter } from 'vue-router';
   import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
+  import VuePdfEmbed from 'vue-pdf-embed'
+
+  // optional styles
+  import 'vue-pdf-embed/dist/styles/annotationLayer.css'
+  import 'vue-pdf-embed/dist/styles/textLayer.css'
 
   const API_URL = 'http://localhost:8000/homepage/';
   
@@ -134,7 +139,7 @@
       ChatDotRound,
       DataBoard,
       Bell,
-    
+      VuePdfEmbed,
     },
 
     setup() {
@@ -253,8 +258,8 @@
   }
 
   .pdf-container {
-  width: 100%;
-  height: 600px;
+  width: 60%;
+  height: 900px;
   overflow-y: auto;
   border: 1px solid #ccc;
 }
