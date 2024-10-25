@@ -1,8 +1,3 @@
-<!--!!!!法老请写-->
-<!--现在相当于访问这个界面全部都是会到课程0001的界面来-->
-<!--你写完跳转记得改这里-->
-
-
 <template>
   <div class="discussion-board">
     <h2>讨论区 {{ currentPath }}</h2>
@@ -55,7 +50,9 @@
 
         <button @click="deleteDiscussion(discussion.dno)">删除</button> <!-- 添加删除按钮 -->
         <button @click="editDiscussion(discussion)">编辑</button> <!-- 添加编辑按钮 -->
-        <button >加入收藏</button> <!-- 添加收藏按钮 -->
+        <button @click="postFavorite(discussion)">
+          {{ discussion.is_favourited ? '取消收藏':'加入收藏'}}
+        </button> <!-- 添加收藏按钮 -->
 
         <hr />
       </div>
@@ -128,7 +125,6 @@ import axios from 'axios';
 import OSS from 'ali-oss';
 
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
-// const API_URL = `http://localhost:8000/chatRoom/1/discussion`;
 
 // 创建 Axios 实例
 const instance = axios.create();
@@ -339,7 +335,29 @@ export default {
     goToDiscussionDetail(dno) {
       this.$router.push({name: 'Review', params: {dno}});
     },
+
+    //对收藏进行操作
+    async postFavorite(discussion){
+      const API_URL = `http://localhost:8000/homepage/favorite/${discussion.dno}`
+      const hit = discussion.is_favourited ? '确定要取消收藏' : '确定要加入收藏';
+      const hit2 = discussion.is_favourited ? '取消收藏成功' : '加入收藏成功';
+     if (confirm(hit)) { // 确认提示
+        try {
+          const response = await instance.post(API_URL); // 使用 dno 进行删除请求
+          if (response.data.code === 200) {
+            // 删除成功，重新获取讨论列表
+            alert(hit2);
+            await this.fetchDiscussions();
+          } else {
+            console.error('添加收藏失败失败', response.data);
+          }
+        } catch (error) {
+          console.error('请求失败', error);
+        }
+      }
   },
+  },
+
 
 };
 </script>

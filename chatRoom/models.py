@@ -30,3 +30,11 @@ class PictureReview(models.Model):
     rno = models.ForeignKey('Review', on_delete=models.CASCADE)
     pfile = models.FileField(upload_to='pictures')
 
+class Like(models.Model):
+    rno = models.ForeignKey('Review', on_delete=models.CASCADE)
+    userNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
+
+class Favorite(models.Model):
+    dno = models.ForeignKey('Discussion', on_delete=models.CASCADE)
+    userNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
+
