@@ -1,122 +1,111 @@
 <template>
   <div class="discussion-board">
-    <h2>讨论区 {{ currentPath }}</h2>
+    <div class="container">
+      <h2 class="title">讨论区 {{ currentPath }}</h2>
 
-    <!-- 搜索功能 -->
-    <div class="search-bar">
-      <input
-        type="text"
-        v-model="searchQuery"
-        @input="filterDiscussions"
-        placeholder="搜索讨论标题或内容"
-      />
-    </div>
+      <!-- 搜索功能 -->
+      <div class="search-bar">
+        <input
+          type="text"
+          v-model="searchQuery"
+          @input="filterDiscussions"
+          placeholder="搜索讨论标题或内容"
+        />
+      </div>
 
-    <!-- 显示加载状态 -->
-    <div v-if="loading">加载中...</div>
+      <!-- 显示加载状态 -->
+      <div v-if="loading" class="loading">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+      </div>
 
-    <!-- 如果没有讨论 -->
-    <div v-else-if="filteredDiscussions.length === 0">没有讨论帖子。</div>
-<!--学生界面可以拿来复用 根据token确定是学生还是老师，展示对应的选项按钮 -->
-<!--老师可以删除任意人发的讨论 学生只能删除自己发布的讨论-->
-<!--编辑只能编辑自己发布的，老师应该没有权限去编辑别人的吧-->
-<!--教师应该也能收藏？ 不知道也许吧-->
-    <!-- 显示讨论列表 -->
-    <div v-else>
-      <div v-for="discussion in filteredDiscussions" :key="discussion.dno" class="discussion">
-<!--        这里改变一下 提示用户这里能点开-->
-        <h3  @click="goToDiscussionDetail(discussion.dno)">{{ discussion.dtitle }}</h3>
-        <p @click="goToDiscussionDetail(discussion.dno)">{{ discussion.dinfo }}</p>
-<!--        改成展示用户名-->
-        <p>{{ discussion.ownerNo }}</p>
-        <p>
-          <small>发表于：{{ formatDate(discussion.postTime) }}</small>
-        </p>
-        <p v-if="discussion.havePic">此帖有图片</p>
+      <!-- 如果没有讨论 -->
+      <div v-else-if="filteredDiscussions.length === 0" class="no-discussions">
+        暂无讨论帖子。
+      </div>
 
-        <!-- 展示图片 -->
-        <div v-if="discussion.pictures && discussion.pictures.length">
-          <h4>图片展示：</h4>
-          <div class="images">
-            <img
-              v-for="(picture, index) in discussion.pictures"
-              :key="index"
-              :src="`${BUCKET_URL}${picture.pfile}`"
-              alt="讨论图片"
-              class="discussion-image"
-            />
+      <!-- 显示讨论列表 -->
+      <div v-else class="discussion-list">
+        <div v-for="discussion in filteredDiscussions" :key="discussion.dno" class="discussion-item">
+          <h3 @click="goToDiscussionDetail(discussion.dno)" class="discussion-title">{{ discussion.dtitle }}</h3>
+          <p @click="goToDiscussionDetail(discussion.dno)" class="discussion-content">{{ discussion.dinfo }}</p>
+          <div class="discussion-meta">
+            <span class="author">{{ discussion.ownerNo }}</span>
+            <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
+          </div>
+          <p v-if="discussion.havePic" class="has-image">此帖有图片</p>
+
+          <!-- 展示图片 -->
+          <div v-if="discussion.pictures && discussion.pictures.length" class="image-gallery">
+            <h4>图片展示：</h4>
+            <div class="image-grid">
+              <img
+                v-for="(picture, index) in discussion.pictures"
+                :key="index"
+                :src="`${BUCKET_URL}${picture.pfile}`"
+                alt="讨论图片"
+                class="discussion-image"
+              />
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button @click="deleteDiscussion(discussion.dno)" class="delete-btn">删除</button>
+            <button @click="editDiscussion(discussion)" class="edit-btn">编辑</button>
+            <button @click="postFavorite(discussion)" class="favorite-btn">
+              {{ discussion.is_favourited ? '取消收藏' : '加入收藏' }}
+            </button>
           </div>
         </div>
-
-        <button @click="deleteDiscussion(discussion.dno)">删除</button> <!-- 添加删除按钮 -->
-        <button @click="editDiscussion(discussion)">编辑</button> <!-- 添加编辑按钮 -->
-        <button @click="postFavorite(discussion)">
-          {{ discussion.is_favourited ? '取消收藏':'加入收藏'}}
-        </button> <!-- 添加收藏按钮 -->
-
-        <hr />
       </div>
     </div>
-     <!-- 编辑讨论表单 -->
-    <div v-if="isEditing">
 
-<!--这一段的编辑逻辑应该是弹出窗口，或者是跳转到新界面，交给你去改了-->
-      <!-- 编辑讨论弹出窗口 -->
+    <!-- 编辑讨论弹出窗口 -->
     <div v-if="isEditing" class="modal">
       <div class="modal-content">
         <h3>编辑讨论</h3>
         <form @submit.prevent="updateDiscussion">
-          <div>
+          <div class="form-group">
             <label for="title">标题:</label>
             <input type="text" v-model="editingDiscussion.dtitle" required />
           </div>
-          <div>
+          <div class="form-group">
             <label for="content">正文:</label>
             <textarea v-model="editingDiscussion.dinfo" required></textarea>
           </div>
-<!--          <div>-->
-<!--            <label for="images">上传图片:</label>-->
-<!--            <input type="file" @change="handleFileUpload" multiple accept="image/*" />-->
-<!--          </div>-->
-<!--          <div class="image-preview">-->
-<!--            <h2>预览:</h2>-->
-<!--            <div v-if="imagePreviews.length">-->
-<!--              <img v-for="(img, index) in imagePreviews" :key="index" :src="img" alt="Image Preview" style="max-width: 100px; margin: 5px;" />-->
-<!--            </div>-->
-<!--          </div>-->
-          <button type="submit">提交帖子</button>
-          <button type="button" @click="cancelEdit">取消</button>
+          <div class="form-actions">
+            <button type="submit" class="submit-btn">提交</button>
+            <button type="button" @click="cancelEdit" class="cancel-btn">取消</button>
+          </div>
         </form>
       </div>
     </div>
-    </div>
 
     <!-- 发起讨论功能 -->
-    <div class="post-form">
-    <h3>发帖</h3>
-    <form @submit.prevent="submitPost">
-      <div>
-        <label for="title">标题:</label>
-        <input type="text" v-model="title" required />
-      </div>
-      <div>
-        <label for="content">正文:</label>
-        <textarea v-model="content" required></textarea>
-      </div>
-      <div>
-        <label for="images">上传图片:</label>
-        <input type="file" @change="handleFileUpload" multiple accept="image/*" />
-      </div>
-      <div class="image-preview">
-        <h2>预览:</h2>
-        <div v-if="imagePreviews.length">
-          <img v-for="(img, index) in imagePreviews" :key="index" :src="img" alt="Image Preview" style="max-width: 100px; margin: 5px;" />
+    <div class="new-discussion">
+      <h3>发帖</h3>
+      <form @submit.prevent="submitPost">
+        <div class="form-group">
+          <label for="title">标题:</label>
+          <input type="text" v-model="title" required />
         </div>
-      </div>
-      <button type="submit">提交帖子</button>
-    </form>
-  </div>
-
+        <div class="form-group">
+          <label for="content">正文:</label>
+          <textarea v-model="content" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="images">上传图片:</label>
+          <input type="file" @change="handleFileUpload" multiple accept="image/*" />
+        </div>
+        <div v-if="imagePreviews.length" class="image-preview">
+          <h4>预览:</h4>
+          <div class="image-grid">
+            <img v-for="(img, index) in imagePreviews" :key="index" :src="img" alt="Image Preview" />
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">提交帖子</button>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -363,45 +352,242 @@ export default {
 </script>
 
 <style scoped>
-/* 样式可以根据需要调整 */
+.discussion-board {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
 .search-bar {
   margin-bottom: 20px;
 }
 
-.new-discussion {
-  margin-top: 20px;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+.search-bar input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
 }
 
-.new-discussion form {
+.loading {
+  text-align: center;
+  padding: 20px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-discussions {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}
+
+.discussion-list {
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
-.new-discussion label {
-  margin-bottom: 5px;
+.discussion-item {
+  background-color: #fff;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  padding: 15px;
+  transition: box-shadow 0.3s ease;
 }
 
-.new-discussion input,
-.new-discussion textarea {
-  margin-bottom: 15px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.discussion-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.new-discussion button {
-  padding: 10px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 5px;
+.discussion-title {
+  font-size: 18px;
+  color: #2c3e50;
+  margin-bottom: 10px;
   cursor: pointer;
 }
 
-.new-discussion button:hover {
-  background-color: #45a049;
+.discussion-content {
+  color: #34495e;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.discussion-meta {
+  font-size: 14px;
+  color: #7f8c8d;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.has-image {
+  color: #3498db;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.image-gallery {
+  margin-top: 10px;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.discussion-image {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.action-buttons button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.delete-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.edit-btn {
+  background-color: #f39c12;
+  color: white;
+}
+
+.favorite-btn {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.action-buttons button:hover {
+  opacity: 0.8;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.submit-btn,
+.cancel-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.new-discussion {
+  margin-top: 30px;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.new-discussion h3 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.image-preview {
+  margin-top: 15px;
+}
+
+.image-preview h4 {
+  margin-bottom: 10px;
 }
 </style>
