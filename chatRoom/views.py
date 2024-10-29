@@ -49,6 +49,7 @@ class showDiscussion(APIView):
         try:
             havePic = 1 if images else 0
 
+
             new_discussion = Discussion.objects.create(
                 dtitle=title,
                 dinfo=info,
