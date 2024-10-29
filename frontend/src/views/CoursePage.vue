@@ -96,6 +96,7 @@
             </el-button>
           </div>
         </div>
+        
         <div v-if="selectedTab === 'introduction'" class="course-intro">
           <p>{{ courseData?.data?.cintro || 'cintro' }}</p>
         </div>
@@ -120,25 +121,53 @@
         </div>
 
         <div v-if="selectedTab === 'ppts'" class="course-ppts">
-          <h2>课件</h2>
+          <div class="content-actions">
+            <el-upload
+              class="upload-demo"
+              action="/api/upload-material"
+              :on-success="handleUploadSuccess"
+              :on-error="handleUploadError"
+            >
+              <el-button type="primary">上传课件</el-button>
+            </el-upload>
+          </div>
+          <el-tree
+            :data="materialsTree"
+            :props="defaultProps"
+            @node-click="handleNodeClick"
+          >
+            <template #default="{ node, data }">
+              <span class="custom-tree-node">
+                <span>{{ node.label }}</span>
+                <span v-if="!node.isLeaf">
+                  <el-button
+                    type="text"
+                    size="small"
+                    @click.stop="() => handleAddFolder(data)"
+                  >
+                    添加文件夹
+                  </el-button>
+                </span>
+              </span>
+            </template>
+          </el-tree>
         </div>
         <div v-if="selectedTab === 'papers'" class="course-papers">
-          <h2>历年试题库</h2>
         </div>
         <div v-if="selectedTab === 'exercises'" class="course-exercises">
-          <h2>习题库</h2>
+          
         </div>
 
         <div v-if="selectedTab === 'homework'" class="course-homework">
-          <h2>作业</h2>
+          
         </div>
 
         <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
-          <h2>AI助手</h2>
+          
         </div>
 
         <div v-if="selectedTab === 'notice'" class="course-notice">
-          <h2>通知</h2>
+          
         </div>
       </main>
     </div>
@@ -191,6 +220,20 @@
         </span>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="previewDialogVisible"
+      title="课件预览"
+      width="80%"
+    >
+      <div v-if="selectedMaterial">
+        <VuePdfEmbed v-if="selectedMaterial.type === 'pdf'" :source="selectedMaterial.url" />
+        <img v-else-if="selectedMaterial.type === 'image'" :src="selectedMaterial.url" style="max-width: 100%;" />
+        <div v-else>
+          无法预览此类型的文件。 <a :href="selectedMaterial.url" target="_blank">下载文件</a>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -198,7 +241,7 @@
   import { ref, onMounted } from 'vue';
   import axios from 'axios';
   import { useRoute, useRouter } from 'vue-router';
-  import {ElMessage} from 'element-plus'
+  import { ElMessage, ElMessageBox } from 'element-plus'
   import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
   import VuePdfEmbed from 'vue-pdf-embed'
 
@@ -251,6 +294,14 @@
         cintro: ''
       });
 
+      const materialsTree = ref([]);
+      const defaultProps = {
+        children: 'children',
+        label: 'name',
+      };
+      const previewDialogVisible = ref(false);
+      const selectedMaterial = ref(null);
+
       const fetchUsername = async () => {
           try {
               const response = await instance.get(USERNAME_URL);
@@ -281,6 +332,45 @@
           console.error('Error fetching course data:', error);
         }
       };
+
+      const fetchMaterials = async () => {
+      try {
+        const response = await axios.get('/api/course-materials');
+        materialsTree.value = response.data;
+      } catch (error) {
+        console.error('Error fetching materials:', error);
+        ElMessage.error('获取课件失败');
+      }
+    };
+
+    const handleUploadSuccess = () => {
+      ElMessage.success('上传成功');
+      fetchMaterials(); // Refresh the materials list
+    };
+
+    const handleUploadError = () => {
+      ElMessage.error('上传失败');
+    };
+
+    const handleNodeClick = (data) => {
+      if (data.type === 'folder') return;
+      selectedMaterial.value = data;
+      previewDialogVisible.value = true;
+    };
+
+    const handleAddFolder = async (data) => {
+      const folderName = await ElMessageBox.prompt('请输入文件夹名称', '新建文件夹');
+      if (folderName.value) {
+        try {
+          await axios.post('/api/add-folder', { parentId: data.id, name: folderName.value });
+          ElMessage.success('文件夹创建成功');
+          fetchMaterials(); // Refresh the materials list
+        } catch (error) {
+          console.error('Error creating folder:', error);
+          ElMessage.error('创建文件夹失败');
+        }
+      }
+    };
 
       const handleSelect = (key) => {
         selectedTab.value = key;
@@ -370,6 +460,7 @@
       onMounted(() => {
         fetchUsername();
         fetchCourseData();
+        fetchMaterials();
       });
   
       return {
@@ -392,6 +483,14 @@
         editForm,
         showEditDialog,
         handleEditSubmit,
+        materialsTree,
+        defaultProps,
+        previewDialogVisible,
+        selectedMaterial,
+        handleUploadSuccess,
+        handleUploadError,
+        handleNodeClick,
+        handleAddFolder,
       };
     }
   };
@@ -467,5 +566,18 @@
   font-size: 12px;
   color: #606266;
   margin-top: 7px;
+}
+
+.course-ppts {
+  margin-top: 20px;
+}
+
+.custom-tree-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  padding-right: 8px;
 }
 </style>
