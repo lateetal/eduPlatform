@@ -34,6 +34,7 @@ INSTALLED_APPS = [#在此处添加自己的应用
     'login',
     'homepage',
     'chatRoom',
+    'home',
 ]
 
 #登录验证
@@ -93,7 +94,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'edu',
         'USER':'root',
-        'PASSWORD':'qzx04',
+        'PASSWORD':'yumu1412',
     }
 }
 
