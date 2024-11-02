@@ -1,24 +1,12 @@
-import os
-import uuid
-from lib2to3.fixes.fix_input import context
-
-import oss2
-from django.http import JsonResponse
 from django.utils import timezone
-
-import jwt
-from django.shortcuts import render
-from oss2.defaults import connect_timeout
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-
 import chatRoom
 from chatRoom import models
 from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion,Like
 from chatRoom.serializers import discussionSerializer, ReviewSerializer
-
 from homepage.views import extract_user_info_from_auth
 from login.models import User
 

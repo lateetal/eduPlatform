@@ -187,8 +187,15 @@
           
         </div>
 
+
         <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
-          
+          <div id="chat-container">
+            <div v-for="(msg, index) in chatHistory" :key="index" :class="msg.role">
+              {{ msg.content }}
+            </div>
+          </div>
+          <input type="text" v-model="userInput" placeholder="输入消息..." />
+          <button @click="handleSend">发送</button>
         </div>
 
         <div v-if="selectedTab === 'notice'" class="course-notice">
@@ -274,9 +281,10 @@
   import 'vue-pdf-embed/dist/styles/annotationLayer.css'
   import 'vue-pdf-embed/dist/styles/textLayer.css'
 
-  const USERNAME_URL = 'http://localhost:8000/homepage/getusername/'
+  const USERNAME_URL = 'http://localhost:8000/homepage/getusername/';
   const API_URL = 'http://localhost:8000/homepage/';
   const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
+  const AI_URL = 'http://localhost:8000/homepage/aichat';
 
   const instance = axios.create();
   instance.interceptors.request.use(config => {
@@ -308,16 +316,13 @@
       const username = ref('');
       const userType = ref('');
       const error = ref('');
-
       const uploadDialogVisible = ref(false);
-      const uploadForm = ref({
-        file: null
-      });
-
+      const uploadForm = ref({ file: null });
       const editDialogVisible = ref(false);
-      const editForm = ref({
-        cintro: ''
-      });
+      const editForm = ref({ cintro: '' });
+      const chatContainer = ref(null);
+      const userInput = ref('');
+      const chatHistory = ref([]);
 
       const fileStructure = ref([
         {
@@ -492,18 +497,58 @@
           default: return '';
         }
       };
-  
+      // 更新聊天记录显示
+    const updateChatHistory = () => {
+      if (chatContainer.value) {
+        chatContainer.value.innerHTML = chatHistory.value.map(msg => `
+          <div class="message ${msg.role}">${msg.content}</div>
+        `).join('');
+      }
+    };
+
+    // 发送消息
+    const handleSend = async () => {
+      const input = userInput.value.trim();
+      if (input) {
+        // 添加用户消息到聊天记录
+        chatHistory.value.push({ role: 'user', content: input });
+        updateChatHistory();
+        userInput.value = '';  // 清空输入框
+
+        try {
+          // 发送请求到后端
+          const response = await fetch(AI_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ input }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // 添加 AI 回复到聊天记录
+            chatHistory.value.push({ role: 'ai', content: data.message });
+          } else {
+            chatHistory.value.push({ role: 'ai', content: '请求失败，请稍后再试。' });
+          }
+        } catch (error) {
+          chatHistory.value.push({ role: 'ai', content: '网络错误，请稍后再试。' });
+        }
+        updateChatHistory();
+      }
+    };
+
       onMounted(() => {
         fetchUsername();
         fetchCourseData();
       });
-  
+
       return {
         BUCKET_URL,
         courseData,
         selectedTab,
         handleSelect,
         goDiscussion,
+
         username,
         userType,
         error,
@@ -514,10 +559,18 @@
         handleUpload,
         handleDownload,
         getContentTitle,
+
         editDialogVisible,
         editForm,
         showEditDialog,
         handleEditSubmit,
+
+        chatContainer,
+        userInput,
+        chatHistory,
+        handleSend,
+        updateChatHistory,
+
         fileStructure,
         defaultProps,
         searchQuery,
@@ -533,6 +586,7 @@
     }
   };
 </script>
+
   
 <style scoped>
 .course-page {

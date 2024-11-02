@@ -13,5 +13,6 @@ urlpatterns = [
     path('favorite', views.Favorites.as_view(), name='favoriteShow'),
 
     path('favorite/<str:dno>', views.Favorites.as_view(), name='favoriteUpdate'),
+    path('aichat',views.AIchat.as_view(),name='aichat'),
 
 ]

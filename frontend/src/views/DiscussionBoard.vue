@@ -283,12 +283,6 @@ export default {
       this.imagePreviews = []; // 清空预览
     },
 
-    // // 处理文件上传
-    // handleFileUpload(event) {
-    //   const files = event.target.files;
-    //   this.imagePreviews = Array.from(files).map(file => URL.createObjectURL(file));
-    // },
-
     // 更新讨论
     async updateDiscussion() {
       const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`

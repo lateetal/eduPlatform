@@ -10,5 +10,6 @@ urlpatterns = [
     path('login/', include('login.urls')),
     path('homepage/', include('homepage.urls')),
     path('chatRoom/', include('chatRoom.urls')),
+    path('home/', include('home.urls')),
 
 ]

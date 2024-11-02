@@ -1,3 +1,5 @@
+import time
+
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated
@@ -13,6 +15,7 @@ from chatRoom.models import Favorite
 from .serializers import courseSerializer, courseDetailSerializer
 from chatRoom.serializers import FavoriteSerializer
 
+from zhipuai import ZhipuAI
 import jwt
 
 
@@ -143,3 +146,39 @@ class Favorites(APIView):
         serializer = FavoriteSerializer(favorite)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+class AIchat(APIView):
+    def post(self, request):
+        client = ZhipuAI(api_key="2272f57760983b79497d3941b37b9cdc.deE7EZflxBR8gEJV")  # 请填写您自己的APIKey
+        # 从请求中获取用户输入
+        user_input = request.data.get('input')
+
+        response = client.chat.asyncCompletions.create(
+            model="glm-4",  # 填写需要调用的模型名称
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_input
+                }
+            ],
+        )
+
+        # 获取响应ID
+        task_id = response.id
+        task_status = ''
+        get_cnt = 0
+
+        # 轮询获取结果
+        while task_status != 'SUCCESS' and task_status != 'FAILED' and get_cnt < 40:
+            time.sleep(2)  # 等待2秒后再查询
+            result_response = client.chat.asyncCompletions.retrieve_completion_result(id=task_id)
+            task_status = result_response.task_status
+
+            if task_status == 'SUCCESS':
+                generated_content = result_response.choices[0].message.content
+                return Response({'message': generated_content}, status=status.HTTP_200_OK)
+            elif task_status == 'FAILED':
+                return Response({'error': '任务失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            get_cnt += 1
+
+        return Response({'error': '请求超时，请稍后再试'}, status=status.HTTP_408_REQUEST_TIMEOUT)
