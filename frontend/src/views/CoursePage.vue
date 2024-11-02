@@ -96,6 +96,7 @@
             </el-button>
           </div>
         </div>
+        
         <div v-if="selectedTab === 'introduction'" class="course-intro">
           <p>{{ courseData?.data?.cintro || 'cintro' }}</p>
         </div>
@@ -118,27 +119,80 @@
           <p>电话：{{ courseData?.data?.teacher?.tphone || 'tphone'}}</p>
           <p>介绍：{{ courseData?.data?.teacher?.tintro || 'tintro'}}</p>
         </div>
-
         <div v-if="selectedTab === 'ppts'" class="course-ppts">
-          <h2>课件</h2>
+          <div class="file-explorer">
+            <div class="file-search">
+              <el-input
+              v-model="searchQuery"
+              placeholder="输入资源名称查找"
+              prefix-icon="el-icon-search"
+              />
+            </div>
+            <el-tree
+              :data="fileStructure"
+              :props="defaultProps"
+              @node-click="handleNodeClick"
+              :filter-node-method="filterNode"
+              ref="fileTree"
+            >
+              <template #default="{ node, data }">
+                <span class="custom-tree-node">
+                  <span>{{ node.label }}</span>
+                  <span v-if="userType === 'teacher'">
+                    <el-button
+                      size="mini"
+                      type="text"
+                      @click.stop="() => handleAddFolder(data)"
+                    >
+                      新建文件夹
+                    </el-button>
+                    <el-button
+                      size="mini"
+                      type="text"
+                      @click.stop="() => handleUploadFile(data)"
+                    >
+                      上传文件
+                    </el-button>
+                  </span>
+                </span>
+              </template>
+            </el-tree>
+          </div>
+          <el-table
+            :data="currentFolderContent"
+            style="width: 100%"
+          >
+            <el-table-column prop="name" label="目录名称" />
+            <el-table-column label="属性" width="100">
+              <template #default="scope">
+                <el-button
+                  size="mini"
+                  type="text"
+                  @click="handleDownload(scope.row)"
+                >
+                  下载
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
+
         <div v-if="selectedTab === 'papers'" class="course-papers">
-          <h2>历年试题库</h2>
         </div>
         <div v-if="selectedTab === 'exercises'" class="course-exercises">
-          <h2>习题库</h2>
+          
         </div>
 
         <div v-if="selectedTab === 'homework'" class="course-homework">
-          <h2>作业</h2>
+          
         </div>
 
         <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
-          <h2>AI助手</h2>
+          
         </div>
 
         <div v-if="selectedTab === 'notice'" class="course-notice">
-          <h2>通知</h2>
+          
         </div>
       </main>
     </div>
@@ -191,14 +245,28 @@
         </span>
       </template>
     </el-dialog>
+
+    <el-dialog
+      title="新建文件夹"
+      v-model="newFolderDialogVisible"
+      width="30%"
+    >
+      <el-input v-model="newFolderName" placeholder="请输入文件夹名称" />
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="newFolderDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="createNewFolder">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
   <script>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, watch } from 'vue';
   import axios from 'axios';
   import { useRoute, useRouter } from 'vue-router';
-  import {ElMessage} from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
   import VuePdfEmbed from 'vue-pdf-embed'
 
@@ -250,6 +318,30 @@
       const editForm = ref({
         cintro: ''
       });
+
+      const fileStructure = ref([
+        {
+          label: '电子课件',
+          children: [
+            { label: '第五章', children: [] },
+            { label: '第四章', children: [] },
+            { label: '第三章', children: [] },
+            { label: '第二章', children: [] },
+            { label: '第一章', children: [] },
+          ]
+        }
+      ]);
+
+      const defaultProps = {
+        children: 'children',
+        label: 'label'
+      };
+
+      const searchQuery = ref('');
+      const currentFolderContent = ref([]);
+      const newFolderDialogVisible = ref(false);
+      const newFolderName = ref('');
+      const currentFolder = ref(null);
 
       const fetchUsername = async () => {
           try {
@@ -351,6 +443,40 @@
         }
       };
 
+      const handleNodeClick = (data) => {
+        currentFolder.value = data;
+        currentFolderContent.value = data.children || [];
+      };
+
+      const filterNode = (value, data) => {
+        if (!value) return true;
+        return data.label.includes(value);
+      };
+
+      const handleAddFolder = (data) => {
+        currentFolder.value = data;
+        newFolderDialogVisible.value = true;
+      };
+
+      const createNewFolder = () => {
+        if (newFolderName.value) {
+          currentFolder.value.children.push({
+            label: newFolderName.value,
+            children: []
+          });
+          newFolderDialogVisible.value = false;
+          newFolderName.value = '';
+        }
+      };
+
+      const handleUploadFile = (data) => {
+        // Implement file upload logic here
+        console.log('Upload file to:', data.label);
+      };
+
+      watch(searchQuery, (val) => {
+        this.$refs.fileTree.filter(val);
+      });
       const getContentTitle = () => {
         switch (selectedTab.value) {
           case 'introduction': return '课程介绍';
@@ -392,6 +518,17 @@
         editForm,
         showEditDialog,
         handleEditSubmit,
+        fileStructure,
+        defaultProps,
+        searchQuery,
+        currentFolderContent,
+        newFolderDialogVisible,
+        newFolderName,
+        handleNodeClick,
+        filterNode,
+        handleAddFolder,
+        createNewFolder,
+        handleUploadFile,
       };
     }
   };
@@ -467,5 +604,24 @@
   font-size: 12px;
   color: #606266;
   margin-top: 7px;
+}
+
+.file-explorer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.file-search {
+  margin-bottom: 10px;
+}
+
+.custom-tree-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  padding-right: 8px;
 }
 </style>
