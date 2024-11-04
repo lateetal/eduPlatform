@@ -54,8 +54,9 @@
           </h2>
           <ul class="notification-list">
             <li v-for="notification in notifications" :key="notification.id">
-              <span class="notification-title">{{ notification.title }}</span>
-              <span class="notification-date">{{ notification.date }}</span>
+              <span class="notification-title">{{ notification.mtitle }}</span>
+              <span class="notification-info">{{ notification.minfo }}</span>
+              <span class="notification-date">{{ formatDate(notification.mtime) }}</span>
             </li>
           </ul>
         </div>
@@ -72,6 +73,7 @@ import {ElMessage} from 'element-plus'
 const API_URL = 'http://localhost:8000/homepage/student/'
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com'
 const USERNAME_URL = 'http://localhost:8000/homepage/getusername/'
+const NOTIFICATIONS_URL = 'http://localhost:8000/homepage/course/message' // New endpoint for notifications
 
 // 创建 Axios 实例
 const instance = axios.create();
@@ -98,16 +100,13 @@ export default {
       loading: true,
       error: null,
       BUCKET_URL,
-      notifications: [
-      { id: 1, title: "智慧课程平台操作手册（学生版）", date: "2024-02-23" },
-      { id: 2, title: "关于开展2024年春季学期教学检查的通知", date: "2024-02-20" },
-      { id: 3, title: "2024年春季学期开学温馨提示", date: "2024-02-18" },
-      ]
+      notifications: []
     }
   },
   mounted() {
     this.fetchSubjects()
     this.fetchUsername()
+    this.fetchCourseMessage();
   },
   methods: {
     async fetchUsername() {
@@ -151,7 +150,19 @@ export default {
         this.loading = false
       }
     },
-    
+    async fetchCourseMessage() {
+      try {
+        const response = await instance.get(NOTIFICATIONS_URL);
+        if (response.data.code === 200) {
+          this.notifications = response.data.data || [];
+          console.log(this.notifications);
+        } else {
+          this.error = '获取通知失败';
+        }
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
     handleCourseClick(courseNo) {
       this.$router.push(`/course/${courseNo}/`)
     },
@@ -161,7 +172,11 @@ export default {
     },
     goHome(){
       this.$router.push('/home')
-    }
+    },
+    formatDate(dateString) {//处理时间
+            const date = new Date(dateString);
+            return date.toISOString().split('T')[0]; // 只返回日期部分
+    },
   }
 }
 </script>

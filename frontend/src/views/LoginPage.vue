@@ -34,6 +34,7 @@
 <script>
   import axios from 'axios'
   import { User,  Lock, Key} from '@element-plus/icons-vue';
+  import { ElMessage } from 'element-plus'
   
   export default {
     components:{ User, Lock, Key },
@@ -66,7 +67,8 @@
             this.$router.push('/teacher')
           }
         } catch (error) {
-          this.message = 'Invalid credentials'
+          ElMessage.error('用户名或密码不正确')
+
         }
       }
     }

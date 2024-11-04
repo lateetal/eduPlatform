@@ -85,7 +85,7 @@ import axios from 'axios';
 import OSS from 'ali-oss';
 
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com'
-const API_URL = 'http://localhost:8000/chatRoom/0001/discussion/5/review';
+const API_URL = 'http://localhost:8000/chatRoom/';
 
 // 创建 Axios 实例
 const instance = axios.create();
@@ -137,10 +137,9 @@ export default {
       this.loading = true; // 开始加载
       this.error = null;   // 清除之前的错误
       try {
+
         const dno = this.$route.params.dno;
         const courseNo = this.$route.params.courseNo;
-        const API_URL = 'http://localhost:8000/chatRoom/';
-
         const response = await instance.get(`${API_URL}${courseNo}/discussion/${dno}/review`); // 调用API获取数据
         this.discussion = response.data.data; // 更新讨论数据，注意访问data属性
 
@@ -215,7 +214,10 @@ export default {
 
       try {
         // 使用 axios 提交数据到后端接口
-        const response = await instance.post(API_URL, postData);
+
+        const dno = this.$route.params.dno;
+        const courseNo = this.$route.params.courseNo;
+        const response = await instance.post(`${API_URL}${courseNo}/discussion/${dno}/review`, postData);
         console.log('帖子提交响应:', response.data);
         alert('帖子提交成功！');
         // await this.fetchDiscussions();
@@ -232,7 +234,10 @@ export default {
 
     async deleteComment(commentId) {
       try {
-        const response = await instance.delete(`${API_URL}/${commentId}`);
+
+        const dno = this.$route.params.dno;
+        const courseNo = this.$route.params.courseNo;
+        const response = await instance.delete(`${API_URL}${courseNo}/discussion/${dno}/review/${commentId}`);
         if (response.status === 200) {
           this.discussion.reviews = this.discussion.reviews.filter(comment => comment.rno !== commentId);
         }

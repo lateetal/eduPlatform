@@ -30,6 +30,8 @@
               教学日历</el-menu-item>
             <el-menu-item index="1-4" @click="selectedTab = 'professor'">
               教师信息</el-menu-item>
+            <el-menu-item index="1-5" @click="selectedTab = 'student'">
+              选课学生</el-menu-item>
           </el-sub-menu>
 
           <el-sub-menu index="2">
@@ -119,6 +121,14 @@
           <p>电话：{{ courseData?.data?.teacher?.tphone || 'tphone'}}</p>
           <p>介绍：{{ courseData?.data?.teacher?.tintro || 'tintro'}}</p>
         </div>
+        <div v-if="selectedTab === 'student'" class="course-student">
+          <ul>
+            <li v-for="student in students" :key="student.sno">
+              <h3>{{ student.sno }}</h3>
+              <p>{{ student.sname }}</p>
+            </li>
+          </ul>
+        </div>
         <div v-if="selectedTab === 'ppts'" class="course-ppts">
           <div class="file-explorer">
             <div class="file-search">
@@ -187,7 +197,7 @@
           
         </div>
 
-
+<!--        AI助手-->
         <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
           <div id="chat-container">
             <div v-for="(msg, index) in chatHistory" :key="index" :class="msg.role">
@@ -199,8 +209,26 @@
         </div>
 
         <div v-if="selectedTab === 'notice'" class="course-notice">
-          
+          <form @submit.prevent="sendMessage">
+            <div>
+              <ul>
+                <li v-for="message in messages" :key="message.mno">
+                  <p>{{ message.mtitle }}</p>
+                  <p>{{ message.minfo }}</p>
+                  <button v-if="userType === 'teacher'" @click="deleteMessage(message.mno)">删除</button>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="userType === 'teacher'">
+              <input v-model="title" placeholder="标题" required />
+              <textarea v-model="info" placeholder="正文" required></textarea>
+              <button type="submit">发送通知</button>
+            </div>
+
+          </form>
         </div>
+
       </main>
     </div>
     <el-dialog
@@ -323,6 +351,11 @@
       const chatContainer = ref(null);
       const userInput = ref('');
       const chatHistory = ref([]);
+      const messages = ref([]);
+      const title = ref('');
+      const info = ref('');
+      const students = ref([]);
+
 
       const fileStructure = ref([
         {
@@ -433,7 +466,7 @@
 
       const handleEditSubmit = async () => {
         try {
-          const response = await instance.put(`${API_URL}course/${courseNo}/update_intro/`, {
+          const response = await instance.put(`${API_URL}course/${courseNo}/update_intro`, {
             cintro: editForm.value.cintro
           });
 
@@ -494,6 +527,7 @@
           case 'homework': return '作业';
           case 'AIhelper': return 'AI问答';
           case 'notice': return '通知';
+          case 'student': return '选课学生';
           default: return '';
         }
       };
@@ -506,7 +540,7 @@
       }
     };
 
-    // 发送消息
+    //AI聊天部分
     const handleSend = async () => {
       const input = userInput.value.trim();
       if (input) {
@@ -537,9 +571,46 @@
       }
     };
 
+    //课程通知部分
+    const fetchMessages = async () => {
+      const response = await instance.get(`${API_URL}course/${courseNo}/message`);
+      messages.value = response.data.data;
+    };
+    const deleteMessage = async (mno) =>  {
+      await instance.delete(`${API_URL}course/${courseNo}/message`, { data: { mno } });
+      await fetchMessages(); // Refresh the message list
+    };
+    const sendMessage = async () =>   {
+      await axios.post(`${API_URL}course/${courseNo}/message`, {
+        title: title.value,
+        info: info.value
+      });
+      await fetchMessages(); // Emit event to refresh messages
+        title.value = '';
+        info.value = '';
+        ElMessage.success('通知发送成功');
+    };
+    const fetchAllStudent = async () => {
+      try {
+        const response = await instance.get(`${API_URL}course/${courseNo}/student`);
+
+        console.log(response.data.code);
+        if (response.data.code === 200) {
+          students.value = response.data.data;
+
+        } else {
+          ElMessage.error = ('获取所有选课学生失败');
+        }
+      }catch (err) {
+        ElMessage.error = ('发生错误');
+      }
+    };
+
       onMounted(() => {
+        fetchAllStudent();
         fetchUsername();
         fetchCourseData();
+        fetchMessages();
       });
 
       return {
@@ -582,8 +653,18 @@
         handleAddFolder,
         createNewFolder,
         handleUploadFile,
+
+        messages,
+        info,
+        title,
+        fetchMessages,
+        deleteMessage,
+        sendMessage,
+
+        students,
+        fetchAllStudent,
       };
-    }
+    },
   };
 </script>
 

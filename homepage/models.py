@@ -3,7 +3,7 @@ from django.db import models
 
 
 class Student(models.Model):
-    sno = models.CharField(max_length = 8,primary_key = True)
+    sno = models.CharField(max_length = 20,primary_key = True)
     sname = models.CharField(max_length = 20)
     smail = models.CharField(max_length = 30)
     sconcern = models.IntegerField(validators=[MaxValueValidator(500)]) #关注人数
@@ -34,5 +34,17 @@ class ChooseClass(models.Model):
     cno = models.ForeignKey('Course', on_delete = models.CASCADE)
     ccgrade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)]) #设置min和max值
 
+#教师发给选课学生的通知
+class CourseMessage(models.Model):
+    mno = models.AutoField(primary_key = True)#通知编号
+    mcourse = models.ForeignKey('Course', on_delete = models.CASCADE)#来源课程
+    msend = models.ForeignKey('Teacher', on_delete = models.CASCADE)#来源和发送给谁，使用外键
+    mtime = models.DateTimeField(auto_now_add=True)
+    mtitle = models.CharField(max_length = 100)
+    minfo = models.TextField()
 
-
+class CourseMessageStatus(models.Model):
+    mno = models.ForeignKey('CourseMessage', on_delete = models.CASCADE)
+    sno = models.ForeignKey('Student', on_delete = models.CASCADE)
+    cno = models.ForeignKey('Course', on_delete = models.CASCADE)
+    status = models.BooleanField(default = False)

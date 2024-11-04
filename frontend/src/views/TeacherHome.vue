@@ -10,7 +10,7 @@
           个人中心
         </button>
         <button class="btn btn-ghost" @click="logout" >
-          <el-icon  ><TopRight /></el-icon>
+          <el-icon><TopRight /></el-icon>
           退出
         </button>
       </div>
@@ -54,8 +54,9 @@
           </h2>
           <ul class="notification-list">
             <li v-for="notification in notifications" :key="notification.id">
-              <span class="notification-title">{{ notification.title }}</span>
-              <span class="notification-date">{{ notification.date }}</span>
+              <span class="notification-title">{{ notification.mtitle }}</span>
+              <span class="notification-info">{{ notification.minfo }}</span>
+              <span class="notification-date">{{ formatDate(notification.mtime) }}</span>
             </li>
           </ul>
         </div>
@@ -67,18 +68,16 @@
 <script>
 import axios from 'axios'
 import { User, TopRight } from '@element-plus/icons-vue';
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 const API_URL = 'http://localhost:8000/homepage/teacher/'
+const NOTIFICATIONS_URL = 'http://localhost:8000/homepage/course/message' // New endpoint for notifications
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com'
 const USERNAME_URL = 'http://localhost:8000/homepage/getusername/'
 
-// 创建 Axios 实例
 const instance = axios.create();
-
-// 添加请求拦截器
 instance.interceptors.request.use(config => {
-  const token = localStorage.getItem('token'); // 从本地存储获取令牌
+  const token = localStorage.getItem('token');
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
@@ -88,78 +87,88 @@ instance.interceptors.request.use(config => {
 });
 
 export default {
-  components:{User, TopRight},
+  components: { User, TopRight },
   name: 'TeacherHome',
   data() {
     return {
       subjects: [],
       username: '',
-      userType:'',
+      userType: '',
       loading: true,
       error: null,
+      notifications: [],
       BUCKET_URL,
-      notifications: [
-      { id: 1, title: "智慧课程平台操作手册（学生版）", date: "2024-02-23" },
-      { id: 2, title: "关于开展2024年春季学期教学检查的通知", date: "2024-02-20" },
-      { id: 3, title: "2024年春季学期开学温馨提示", date: "2024-02-18" },
-      ]
     }
   },
   mounted() {
-    this.fetchSubjects()
-    this.fetchUsername()
+    this.fetchSubjects();
+    this.fetchUsername();
+    this.fetchCourseMessage(); // Fetch notifications when mounted
   },
   methods: {
     async fetchSubjects() {
       try {
-        const token = localStorage.getItem('token')
-        const response = await instance.get(API_URL, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-
+        const response = await instance.get(API_URL);
         if (response.data.code === 200) {
-          this.subjects = response.data.data || []
+          this.subjects = response.data.data || [];
         } else {
-          this.error = '获取科目失败'
+          this.error = '获取科目失败';
         }
       } catch (err) {
-        ElMessage.error('请先登录')
-        this.error = err.message
+        ElMessage.error('请先登录');
+        this.error = err.message;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     async fetchUsername() {
       try {
-        const response = await instance.get(USERNAME_URL)
+        const response = await instance.get(USERNAME_URL);
         if (response.status === 200) {
-          const {username,userType} = response.data
+          const { username, userType } = response.data;
+          this.userType = userType;
+          this.username = username;
 
-          this.userType = userType
-          this.username = username
-
-          if(userType != 'teacher'){
-            this.error = '用户权限不足'
+          if (userType !== 'teacher') {
+            this.error = '用户权限不足';
           }
         } else {
-          this.error = '获取用户名失败'
+          this.error = '获取用户名失败';
         }
       } catch (err) {
-        this.error = err.message
+        this.error = err.message;
       }
     },
+    async fetchCourseMessage() {
+      try {
+        const response = await instance.get(NOTIFICATIONS_URL);
+        if (response.data.code === 200) {
+          this.notifications = response.data.data || [];
+          console.log(this.notifications);
+        } else {
+          this.error = '获取通知失败';
+        }
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+
     handleCourseClick(courseNo) {
-      this.$router.push(`/course/${courseNo}/`)
+      this.$router.push(`/course/${courseNo}/`);
     },
-    logout(){
+    logout() {
       localStorage.removeItem('token');
-      this.$router.push('/login')
+      this.$router.push('/login');
     },
-    goHome(){
-      this.$router.push('/home')
-    }
+    goHome() {
+      this.$router.push('/home');
+    },
+
+    formatDate(dateString) {//处理时间
+            const date = new Date(dateString);
+            return date.toISOString().split('T')[0]; // 只返回日期部分
+    },
+
   }
 }
 </script>

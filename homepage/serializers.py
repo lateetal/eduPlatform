@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from homepage.models import Teacher, Course
+from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student
 
 
 class courseSerializer(serializers.Serializer):
@@ -35,3 +35,28 @@ class courseDetailSerializer(serializers.ModelSerializer):
             return courseTeacherDetailSerializer(teacher).data
         except Teacher.DoesNotExist:
             return None
+
+class CourseMessageSerializer(serializers.ModelSerializer):
+    coursename = serializers.CharField(source='course.cname', read_only=True)
+
+    class Meta:
+        model = CourseMessage
+        fields = ('mno', 'mcourse', 'msend', 'mtime', 'mtitle', 'minfo', 'coursename')
+
+class CourseMessageStatusSerializer(serializers.ModelSerializer):
+    # 嵌套序列化器用于获取 CourseMessage 的字段
+    mno = serializers.PrimaryKeyRelatedField(queryset=CourseMessage.objects.all())
+    mtime = serializers.DateTimeField(source='mno.mtime', read_only=True)
+    mtitle = serializers.CharField(source='mno.mtitle', read_only=True)
+    minfo = serializers.CharField(source='mno.minfo', read_only=True)
+    coursename = serializers.CharField(source='course.cname', read_only=True)
+    status = serializers.BooleanField()
+
+    class Meta:
+        model = CourseMessageStatus
+        fields = ['mno', 'mtime', 'mtitle', 'minfo', 'coursename', 'status']
+
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = '__all__'

@@ -12,5 +12,4 @@ urlpatterns = [
 
     path('Like/<str:rno>', views.Like.as_view(), name='likeReview'),
 
-
 ]
