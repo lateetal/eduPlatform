@@ -23,7 +23,6 @@
             <span class="captcha">4997</span>
           </div>
           <button type="submit" class="login-btn">登录</button>
-          <!-- <a href="#" class="forgot-password">忘记密码?</a> -->
         </form>
       </div>
     </div>
@@ -77,16 +76,16 @@
 
 <style scoped>
 .login-container {
-  min-height: 100vh; /* 1 */
-  display: flex; /* 2 */
-  flex-direction: column; /* 3 */
-  justify-content: flex-start; /* 4: 上对齐 */
-  align-items: center; /* 5 */
-  background-image: url('@/assets/bg.jpg'); /* 6 */
-  background-size: cover; /* 7 */
-  background-position: center; /* 8 */
-  background-repeat: no-repeat; /* 9 */
-  margin-top:3%; /* 10: 向下偏移 */
+  min-height: 100vh; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: flex-start; 
+  align-items: center; 
+  background-image: url('@/assets/bg.jpg');
+  background-size: cover;
+  background-position: center; 
+  background-repeat: no-repeat; 
+  margin-top:3%; 
 }
 
 .login-card {
@@ -171,13 +170,6 @@ input {
 
 .login-btn:hover {
   background-color: #187bcd;
-}
-
-.forgot-password {
-  text-align: right;
-  color: #666;
-  text-decoration: none;
-  font-size: 0.9rem;
 }
 
 .forgot-password:hover {

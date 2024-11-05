@@ -99,6 +99,7 @@ export default {
       userType:'',
       loading: true,
       error: null,
+      notice_error: null,
       BUCKET_URL,
       notifications: []
     }
