@@ -121,7 +121,7 @@
           <p>电话：{{ courseData?.data?.teacher?.tphone || 'tphone'}}</p>
           <p>介绍：{{ courseData?.data?.teacher?.tintro || 'tintro'}}</p>
         </div>
-        <div v-if="selectedTab === 'student'" class="course-student">
+        <div v-if="selectedTab === 'student'"  class="course-student">
           <ul>
             <li v-for="student in students" :key="student.sno">
               <h3>{{ student.sno }}</h3>
@@ -201,7 +201,7 @@
         <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
           <div id="chat-container">
             <div v-for="(msg, index) in chatHistory" :key="index" :class="msg.role">
-              {{ msg.content }}
+              <div v-html="convertMarkdown(msg.content)"></div>
             </div>
           </div>
           <input type="text" v-model="userInput" placeholder="输入消息..." />
@@ -304,6 +304,7 @@
   import { ElMessage } from 'element-plus'
   import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
   import VuePdfEmbed from 'vue-pdf-embed'
+  import { marked } from 'marked';
 
   // optional styles
   import 'vue-pdf-embed/dist/styles/annotationLayer.css'
@@ -571,6 +572,11 @@
       }
     };
 
+    //转换markdown
+    const convertMarkdown = (content) => {
+      return marked(content); // 使用 marked 将 Markdown 转换为 HTML
+    };
+
     //课程通知部分
     const fetchMessages = async () => {
       const response = await instance.get(`${API_URL}course/${courseNo}/message`);
@@ -641,6 +647,7 @@
         chatHistory,
         handleSend,
         updateChatHistory,
+        convertMarkdown,
 
         fileStructure,
         defaultProps,
@@ -671,14 +678,16 @@
   
 <style scoped>
 .course-page {
-  font-family: Arial, sans-serif;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   color: #333;
+  background-color: #f5f7fa;
 }
 
 .course-header {
   background-color: #4a69bd;
   color: white;
-  padding: 10px 20px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .header-left {
@@ -687,13 +696,15 @@
 }
 
 .course-title {
-  font-size: 24px;
+  font-size: 28px;
   margin: 0;
+  font-weight: 600;
 }
 
 .course-info {
   font-size: 14px;
-  margin-top: 5px;
+  margin-top: 10px;
+  opacity: 0.9;
 }
 
 .course-content {
@@ -702,21 +713,32 @@
 }
 
 .sidebar {
-  background-color: #f0f0f0;
+  background-color: #fff;
   padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
 }
 
 .main-content {
   flex-grow: 1;
-  padding: 20px;
-  position: relative;
+  padding: 30px;
+  background-color: #fff;
+  margin: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
 }
 
 .content-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #4a69bd;
+  padding-bottom: 10px;
+}
+
+.content-header h2 {
+  font-size: 24px;
+  color: #4a69bd;
 }
 
 .content-actions {
@@ -724,39 +746,153 @@
   gap: 10px;
 }
 
-.pdf-container {
-  width: 100%;
-  height: 900px;
-  overflow-y: auto;
-  border: 1px solid #ccc;
+/* Styles for student list */
+.course-student ul {
+  list-style-type: none;
+  padding: 0;
 }
 
-.pdf-container iframe {
-  border: none;
+.course-student li {
+  background-color: #f0f4f8;
+  margin-bottom: 10px;
+  padding: 15px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.el-upload__tip {
-  font-size: 12px;
-  color: #606266;
-  margin-top: 7px;
+.course-student h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #4a69bd;
 }
 
-.file-explorer {
+.course-student p {
+  margin: 5px 0 0;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Styles for AI Q&A */
+.course-AIhelper {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 500px;
 }
 
-.file-search {
+#chat-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.course-AIhelper .user, .course-AIhelper .ai {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.course-AIhelper .user {
+  background-color: #e1f5fe;
+  align-self: flex-end;
+}
+
+.course-AIhelper .ai {
+  background-color: #f0f4f8;
+  align-self: flex-start;
+}
+
+.course-AIhelper input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
   margin-bottom: 10px;
 }
 
-.custom-tree-node {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.course-AIhelper button {
+  padding: 10px 20px;
+  background-color: #4a69bd;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.course-AIhelper button:hover {
+  background-color: #3a559d;
+}
+
+/* Styles for course notifications */
+.course-notice ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.course-notice li {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 15px;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.course-notice li p:first-child {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4a69bd;
+  margin-bottom: 10px;
+}
+
+.course-notice li p:last-child {
   font-size: 14px;
-  padding-right: 8px;
+  color: #666;
+}
+
+.course-notice button {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.course-notice button:hover {
+  background-color: #d32f2f;
+}
+
+.course-notice form div {
+  margin-top: 20px;
+}
+
+.course-notice input, .course-notice textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.course-notice textarea {
+  height: 100px;
+  resize: vertical;
+}
+
+.course-notice form button {
+  background-color: #4caf50;
+  padding: 10px 20px;
+}
+
+.course-notice form button:hover {
+  background-color: #45a049;
 }
 </style>
