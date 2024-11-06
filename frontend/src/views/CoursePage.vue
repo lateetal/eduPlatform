@@ -1,235 +1,22 @@
 <template>
   <div class="course-page">
-    <header class="course-header">
-      <div class="header-left">
-        <h1 class="course-title">{{ courseData?.data?.cname || 'cname' }}</h1>
-        <span class="course-info">
-          主讲教师: {{ courseData?.data?.teacher?.tname || 'tname' }} |
-          课程编号: {{ courseData?.data?.course_no || 'course_no' }} |
-          课序号: {{ courseData?.data?.course_class || 'course_class' }}
-        </span>
-      </div>
-    </header>
+    <CourseHeader :courseData="courseData" />
     <div class="course-content">
-      <el-aside width="250px" class="sidebar">
-        <el-menu
-          :default-active="selectedTab"
-          class="sidebar-menu"
-          @select="handleSelect"
-        >
-          <el-sub-menu index="1">
-            <template #title>
-              <el-icon><Location /></el-icon>
-              <span>课程信息</span>
-            </template>
-            <el-menu-item index="1-1" @click="selectedTab = 'introduction'">
-              课程介绍</el-menu-item>
-            <el-menu-item index="1-2" @click="selectedTab = 'outline'">
-              教学大纲</el-menu-item>
-            <el-menu-item index="1-3" @click="selectedTab = 'calendar'">
-              教学日历</el-menu-item>
-            <el-menu-item index="1-4" @click="selectedTab = 'professor'">
-              教师信息</el-menu-item>
-            <el-menu-item index="1-5" @click="selectedTab = 'student'">
-              选课学生</el-menu-item>
-          </el-sub-menu>
-
-          <el-sub-menu index="2">
-            <template #title>
-              <el-icon><Folder /></el-icon>
-              <span>课程资源</span>
-            </template>
-            <el-menu-item index="2-1" @click="selectedTab = 'ppts'">
-              课件</el-menu-item>
-            <el-menu-item index="2-2" @click="selectedTab = 'papers'">
-              历年试题库</el-menu-item>
-            <el-menu-item index="2-3" @click="selectedTab = 'exercises'">
-              习题库</el-menu-item>
-          </el-sub-menu>
-
-          <el-sub-menu index="3">
-            <template #title>
-              <el-icon><DataBoard /></el-icon>
-              <span>课程考核</span>
-            </template>
-            <el-menu-item index="3-1" @click="selectedTab = 'homework'">作业</el-menu-item>
-          </el-sub-menu>
-
-          <el-sub-menu index="4">
-            <template #title>
-              <el-icon><ChatDotRound /></el-icon>
-              <span>答疑讨论</span>
-            </template>
-            <el-menu-item index="4-1" @click="goDiscussion">讨论区</el-menu-item>
-            <el-menu-item index="4-2" @click="selectedTab = 'AIhelper'">AI问答</el-menu-item>
-          </el-sub-menu>
-
-          <el-sub-menu index="5">
-            <template #title>
-              <el-icon><Bell /></el-icon>
-              <span>课程通知</span>
-            </template>
-            <el-menu-item index="5-1" @click="selectedTab = 'notice'">通知</el-menu-item>
-          </el-sub-menu>
-        </el-menu>
-      </el-aside>
-          
-      <main class="main-content">
-        <div class="content-header">
-          <h2>{{ getContentTitle() }}</h2>
-          <div class="content-actions">
-            <el-button 
-              type="primary"
-              v-if="selectedTab === 'introduction' && userType === 'teacher'"
-              @click="showEditDialog"
-            >编辑
-            </el-button>
-            <el-button 
-              type="primary" 
-              @click="showUploadDialog"
-              v-if="(selectedTab === 'outline' || selectedTab === 'calendar') && userType === 'teacher'"
-            >上传
-            </el-button>
-            <el-button 
-              type="success" 
-              @click="handleDownload"
-              v-if="selectedTab === 'outline' || selectedTab === 'calendar'"
-              >下载
-            </el-button>
-          </div>
-        </div>
-        
-        <div v-if="selectedTab === 'introduction'" class="course-intro">
-          <p>{{ courseData?.data?.cintro || 'cintro' }}</p>
-        </div>
-        <div v-if="selectedTab === 'outline'" class="course-outline">
-          <div v-if="courseData?.data?.coutline" class="pdf-container">
-            <VuePdfEmbed annotation-layer text-layer :source="BUCKET_URL + courseData.data.coutline" />
-          </div>
-          <p v-else>No PDF available</p>
-        </div>
-        <div v-if="selectedTab === 'calendar'" class="course-calendar">
-          <div v-if="courseData?.data?.calender" class="pdf-container">
-            <VuePdfEmbed annotation-layer text-layer :source="BUCKET_URL + courseData.data.calender" />
-          </div>
-          <p v-else>No PDF available</p>
-        </div>
-        <div v-if="selectedTab === 'professor'" class="course-professor">
-          <p>教师姓名：{{ courseData?.data?.teacher?.tname || 'tname'}}</p>
-          <p>邮箱：{{ courseData?.data?.teacher?.tmail || 'tmail'}}</p>
-          <p>办公室：{{ courseData?.data?.teacher?.toffice || 'toffice'}}</p>
-          <p>电话：{{ courseData?.data?.teacher?.tphone || 'tphone'}}</p>
-          <p>介绍：{{ courseData?.data?.teacher?.tintro || 'tintro'}}</p>
-        </div>
-        <div v-if="selectedTab === 'student'"  class="course-student">
-          <ul>
-            <li v-for="student in students" :key="student.sno">
-              <h3>{{ student.sno }}</h3>
-              <p>{{ student.sname }}</p>
-            </li>
-          </ul>
-        </div>
-        <div v-if="selectedTab === 'ppts'" class="course-ppts">
-          <div class="file-explorer">
-            <div class="file-search">
-              <el-input
-              v-model="searchQuery"
-              placeholder="输入资源名称查找"
-              prefix-icon="el-icon-search"
-              />
-            </div>
-            <el-tree
-              :data="fileStructure"
-              :props="defaultProps"
-              @node-click="handleNodeClick"
-              :filter-node-method="filterNode"
-              ref="fileTree"
-            >
-              <template #default="{ node, data }">
-                <span class="custom-tree-node">
-                  <span>{{ node.label }}</span>
-                  <span v-if="userType === 'teacher'">
-                    <el-button
-                      size="mini"
-                      type="text"
-                      @click.stop="() => handleAddFolder(data)"
-                    >
-                      新建文件夹
-                    </el-button>
-                    <el-button
-                      size="mini"
-                      type="text"
-                      @click.stop="() => handleUploadFile(data)"
-                    >
-                      上传文件
-                    </el-button>
-                  </span>
-                </span>
-              </template>
-            </el-tree>
-          </div>
-          <el-table
-            :data="currentFolderContent"
-            style="width: 100%"
-          >
-            <el-table-column prop="name" label="目录名称" />
-            <el-table-column label="属性" width="100">
-              <template #default="scope">
-                <el-button
-                  size="mini"
-                  type="text"
-                  @click="handleDownload(scope.row)"
-                >
-                  下载
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-
-        <div v-if="selectedTab === 'papers'" class="course-papers">
-        </div>
-        <div v-if="selectedTab === 'exercises'" class="course-exercises">
-          
-        </div>
-
-        <div v-if="selectedTab === 'homework'" class="course-homework">
-          
-        </div>
-
-<!--        AI助手-->
-        <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
-          <div id="chat-container">
-            <div v-for="(msg, index) in chatHistory" :key="index" :class="msg.role">
-              <div v-html="convertMarkdown(msg.content)"></div>
-            </div>
-          </div>
-          <input type="text" v-model="userInput" placeholder="输入消息..." />
-          <button @click="handleSend">发送</button>
-        </div>
-
-        <div v-if="selectedTab === 'notice'" class="course-notice">
-          <form @submit.prevent="sendMessage">
-            <div>
-              <ul>
-                <li v-for="message in messages" :key="message.mno">
-                  <p>{{ message.mtitle }}</p>
-                  <p>{{ message.minfo }}</p>
-                  <button v-if="userType === 'teacher'" @click="deleteMessage(message.mno)">删除</button>
-                </li>
-              </ul>
-            </div>
-
-            <div v-if="userType === 'teacher'">
-              <input v-model="title" placeholder="标题" required />
-              <textarea v-model="info" placeholder="正文" required></textarea>
-              <button type="submit">发送通知</button>
-            </div>
-
-          </form>
-        </div>
-
-      </main>
+      <CourseSidebar 
+        :selectedTab="selectedTab" 
+        @select-tab="handleSelect"
+      />
+      <CourseContent 
+        :selectedTab="selectedTab"
+        :courseData="courseData"
+        :userType="userType"
+        :courseNo="courseNo"
+        :messages="messages"
+        :students="students"
+        @show-edit-dialog="showEditDialog"
+        @show-upload-dialog="showUploadDialog"
+        @show-new-folder-dialog="newFolderDialogVisible = true"
+      />
     </div>
     <el-dialog
       title="上传文件"
@@ -297,382 +84,248 @@
   </div>
 </template>
 
-  <script>
-  import { ref, onMounted, watch } from 'vue';
-  import axios from 'axios';
-  import { useRoute, useRouter } from 'vue-router';
-  import { ElMessage } from 'element-plus'
-  import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/icons-vue';
-  import VuePdfEmbed from 'vue-pdf-embed'
-  import { marked } from 'marked';
+<script>
+import CourseHeader from '@/components/CourseHeader.vue';
+import CourseSidebar from '@/components/CourseSidebar.vue';
+import CourseContent from '@/components/CourseContent.vue';
+import { ref, onMounted, watch } from 'vue';
+import axios from 'axios';
+import { useRoute, useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 
-  // optional styles
-  import 'vue-pdf-embed/dist/styles/annotationLayer.css'
-  import 'vue-pdf-embed/dist/styles/textLayer.css'
+// optional styles
+import 'vue-pdf-embed/dist/styles/annotationLayer.css'
+import 'vue-pdf-embed/dist/styles/textLayer.css'
 
-  const USERNAME_URL = 'http://localhost:8000/homepage/getusername/';
-  const API_URL = 'http://localhost:8000/homepage/';
-  const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
-  const AI_URL = 'http://localhost:8000/homepage/aichat';
+const USERNAME_URL = 'http://localhost:8000/homepage/getusername/';
+const API_URL = 'http://localhost:8000/homepage/';
 
-  const instance = axios.create();
-  instance.interceptors.request.use(config => {
-    const token = localStorage.getItem('token'); // 从本地存储获取令牌
-    if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-    }, error => {
-    return Promise.reject(error);
-  });
-  
-  export default {
-    components:{
-      Location,
-      Folder,
-      ChatDotRound,
-      DataBoard,
-      Bell,
-      VuePdfEmbed,
-    },
+const instance = axios.create();
+instance.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+  }, error => {
+  return Promise.reject(error);
+});
 
-    setup() {
-      const route = useRoute();
-      const router = useRouter();
-      const courseNo = route.params.courseNo;
-      const courseData = ref(null);
-      const selectedTab = ref('introduction');
-      const username = ref('');
-      const userType = ref('');
-      const error = ref('');
-      const uploadDialogVisible = ref(false);
-      const uploadForm = ref({ file: null });
-      const editDialogVisible = ref(false);
-      const editForm = ref({ cintro: '' });
-      const chatContainer = ref(null);
-      const userInput = ref('');
-      const chatHistory = ref([]);
-      const messages = ref([]);
-      const title = ref('');
-      const info = ref('');
-      const students = ref([]);
+export default {
+  components:{
+    CourseHeader,
+    CourseSidebar,
+    CourseContent,
+  },
 
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const courseNo = route.params.courseNo;
+    const courseData = ref(null);
+    const selectedTab = ref('introduction');
+    const username = ref('');
+    const userType = ref('');
+    const error = ref('');
+    const uploadDialogVisible = ref(false);
+    const uploadForm = ref({ file: null });
+    const editDialogVisible = ref(false);
+    const editForm = ref({ cintro: '' });
+    const messages = ref([]);
+    const students = ref([]);
+    const newFolderDialogVisible = ref(false);
+    const newFolderName = ref('');
 
-      const fileStructure = ref([
-        {
-          label: '电子课件',
-          children: [
-            { label: '第五章', children: [] },
-            { label: '第四章', children: [] },
-            { label: '第三章', children: [] },
-            { label: '第二章', children: [] },
-            { label: '第一章', children: [] },
-          ]
-        }
-      ]);
-
-      const defaultProps = {
-        children: 'children',
-        label: 'label'
-      };
-
-      const searchQuery = ref('');
-      const currentFolderContent = ref([]);
-      const newFolderDialogVisible = ref(false);
-      const newFolderName = ref('');
-      const currentFolder = ref(null);
-
-      const fetchUsername = async () => {
-          try {
-              const response = await instance.get(USERNAME_URL);
-              if (response.status === 200) {
-                  const { username: fetchedUsername, userType: fetchedUserType } = response.data;
-
-                  username.value = fetchedUsername; // 更新 username
-                  userType.value = fetchedUserType; // 更新 userType
-              } else {
-                  error.value = '获取用户名失败'; // 设置获取失败错误
-              }
-          } catch (err) {
-              error.value = err.message; // 捕获并设置错误信息
-          }
-      };
-  
-      const fetchCourseData = async () => {
+    const fetchUsername = async () => {
         try {
-          const token = localStorage.getItem('token');
-          const response = await axios.get(`${API_URL}course/${courseNo}/`, {
-            headers: { Authorization: `Bearer ${token}` },
-            maxRedirects: 0,
-          });
-          if (response.status === 200) {
-            courseData.value = response.data;
-          }
-        } catch (error) {
-          console.error('Error fetching course data:', error);
-        }
-      };
-
-      const handleSelect = (key) => {
-        selectedTab.value = key;
-      };
-
-      const goDiscussion = () => {
-        router.push(`/course/${courseNo}/discussion/`);
-      };
-
-      const showUploadDialog = () => {
-        uploadDialogVisible.value = true;
-      };
-
-      const handleFileChange = (file) => {
-        uploadForm.value.file = file.raw;
-      };
-
-      const handleUpload = async () => {
-        if (!uploadForm.value.file) {
-          ElMessage.error('请选择文件');
-          return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', uploadForm.value.file);
-
-        try {
-          const response = await instance.post(`${API_URL}upload/`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
+            const response = await instance.get(USERNAME_URL);
+            if (response.status === 200) {
+                const { username: fetchedUsername, userType: fetchedUserType } = response.data;
+                username.value = fetchedUsername;
+                userType.value = fetchedUserType;
+            } else {
+                error.value = '获取用户名失败';
             }
-          });
-
-          if (response.status === 200) {
-            ElMessage.success('文件上传成功');
-            uploadDialogVisible.value = false;
-            await fetchCourseData();
-          }
-        } catch (error) {
-          console.error('Error uploading file:', error);
-          ElMessage.error('文件上传失败');
+        } catch (err) {
+            error.value = err.message;
         }
-      };
+    };
 
-      const handleDownload = () => {
-        console.log('Download button clicked');
-      };
-
-      const showEditDialog = () => {
-        editForm.value.cintro = courseData.value?.data?.cintro || '';
-        editDialogVisible.value = true;
-      };
-
-      const handleEditSubmit = async () => {
-        try {
-          const response = await instance.put(`${API_URL}course/${courseNo}/update_intro`, {
-            cintro: editForm.value.cintro
-          });
-
-          if (response.status === 200) {
-            ElMessage.success('课程介绍更新成功');
-            editDialogVisible.value = false;
-            await fetchCourseData();
-          }
-        } catch (error) {
-          console.error('Error updating course intro:', error);
-          ElMessage.error('更新课程介绍失败');
+    const fetchCourseData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API_URL}course/${courseNo}/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          maxRedirects: 0,
+        });
+        if (response.status === 200) {
+          courseData.value = response.data;
         }
-      };
-
-      const handleNodeClick = (data) => {
-        currentFolder.value = data;
-        currentFolderContent.value = data.children || [];
-      };
-
-      const filterNode = (value, data) => {
-        if (!value) return true;
-        return data.label.includes(value);
-      };
-
-      const handleAddFolder = (data) => {
-        currentFolder.value = data;
-        newFolderDialogVisible.value = true;
-      };
-
-      const createNewFolder = () => {
-        if (newFolderName.value) {
-          currentFolder.value.children.push({
-            label: newFolderName.value,
-            children: []
-          });
-          newFolderDialogVisible.value = false;
-          newFolderName.value = '';
-        }
-      };
-
-      const handleUploadFile = (data) => {
-        // Implement file upload logic here
-        console.log('Upload file to:', data.label);
-      };
-
-      watch(searchQuery, (val) => {
-        this.$refs.fileTree.filter(val);
-      });
-      const getContentTitle = () => {
-        switch (selectedTab.value) {
-          case 'introduction': return '课程介绍';
-          case 'outline': return '教学大纲';
-          case 'calendar': return '教学日历';
-          case 'professor': return '教师信息';
-          case 'ppts': return '课件';
-          case 'papers': return '历年试题库';
-          case 'exercises': return '习题库';
-          case 'homework': return '作业';
-          case 'AIhelper': return 'AI问答';
-          case 'notice': return '通知';
-          case 'student': return '选课学生';
-          default: return '';
-        }
-      };
-      // 更新聊天记录显示
-    const updateChatHistory = () => {
-      if (chatContainer.value) {
-        chatContainer.value.innerHTML = chatHistory.value.map(msg => `
-          <div class="message ${msg.role}">${msg.content}</div>
-        `).join('');
+      } catch (error) {
+        console.error('Error fetching course data:', error);
       }
     };
 
-    //AI聊天部分
-    const handleSend = async () => {
-      const input = userInput.value.trim();
-      if (input) {
-        // 添加用户消息到聊天记录
-        chatHistory.value.push({ role: 'user', content: input });
-        updateChatHistory();
-        userInput.value = '';  // 清空输入框
-
-        try {
-          // 发送请求到后端
-          const response = await fetch(AI_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ input }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            // 添加 AI 回复到聊天记录
-            chatHistory.value.push({ role: 'ai', content: data.message });
-          } else {
-            chatHistory.value.push({ role: 'ai', content: '请求失败，请稍后再试。' });
-          }
-        } catch (error) {
-          chatHistory.value.push({ role: 'ai', content: '网络错误，请稍后再试。' });
-        }
-        updateChatHistory();
+    const handleSelect = (key) => {
+      selectedTab.value = key;
+      if(selectedTab.value === 'discussion'){
+        router.push(`/course/${courseNo}/discussion/`);
       }
     };
 
-    //转换markdown
-    const convertMarkdown = (content) => {
-      return marked(content); // 使用 marked 将 Markdown 转换为 HTML
+    const showUploadDialog = () => {
+      uploadDialogVisible.value = true;
     };
 
-    //课程通知部分
+    const handleFileChange = (file) => {
+      uploadForm.value.file = file.raw;
+    };
+
+    const handleUpload = async () => {
+      if (!uploadForm.value.file) {
+        ElMessage.error('请选择文件');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', uploadForm.value.file);
+
+      try {
+        const response = await instance.post(`${API_URL}upload/`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        if (response.status === 200) {
+          ElMessage.success('文件上传成功');
+          uploadDialogVisible.value = false;
+          await fetchCourseData();
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        ElMessage.error('文件上传失败');
+      }
+    };
+
+    const showEditDialog = () => {
+      editForm.value.cintro = courseData.value?.data?.cintro || '';
+      editDialogVisible.value = true;
+    };
+
+    const handleEditSubmit = async () => {
+      try {
+        const response = await instance.put(`${API_URL}course/${courseNo}/update_intro`, {
+          cintro: editForm.value.cintro
+        });
+
+        if (response.status === 200) {
+          ElMessage.success('课程介绍更新成功');
+          editDialogVisible.value = false;
+          await fetchCourseData();
+        }
+      } catch (error) {
+        console.error('Error updating course intro:', error);
+        ElMessage.error('更新课程介绍失败');
+      }
+    };
+
+    const createNewFolder = () => {
+      if (newFolderName.value) {
+        // Implement folder creation logic here
+        newFolderDialogVisible.value = false;
+        newFolderName.value = '';
+      }
+    };
+
     const fetchMessages = async () => {
-      const response = await instance.get(`${API_URL}course/${courseNo}/message`);
-      messages.value = response.data.data;
+      try {
+        const response = await instance.get(`${API_URL}course/${courseNo}/message`);
+        messages.value = response.data.data;
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+        ElMessage.error('获取通知失败');
+      }
     };
-    const deleteMessage = async (mno) =>  {
-      await instance.delete(`${API_URL}course/${courseNo}/message`, { data: { mno } });
-      await fetchMessages(); // Refresh the message list
+
+    const deleteMessage = async (mno) => {
+      try {
+        await instance.delete(`${API_URL}course/${courseNo}/message`, { data: { mno } });
+        await fetchMessages();
+        ElMessage.success('通知删除成功');
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        ElMessage.error('删除通知失败');
+      }
     };
-    const sendMessage = async () =>   {
-      await axios.post(`${API_URL}course/${courseNo}/message`, {
-        title: title.value,
-        info: info.value
-      });
-      await fetchMessages(); // Emit event to refresh messages
-        title.value = '';
-        info.value = '';
+
+    const sendMessage = async ({ title, info }) => {
+      try {
+        await instance.post(`${API_URL}course/${courseNo}/message`, { title, info });
+        await fetchMessages();
         ElMessage.success('通知发送成功');
+      } catch (error) {
+        console.error('Error sending message:', error);
+        ElMessage.error('发送通知失败');
+      }
     };
+
     const fetchAllStudent = async () => {
       try {
         const response = await instance.get(`${API_URL}course/${courseNo}/student`);
-
-        console.log(response.data.code);
         if (response.data.code === 200) {
           students.value = response.data.data;
-
         } else {
-          ElMessage.error = ('获取所有选课学生失败');
+          ElMessage.error('获取所有选课学生失败');
         }
-      }catch (err) {
-        ElMessage.error = ('发生错误');
+      } catch (err) {
+        console.error('Error fetching students:', err);
+        ElMessage.error('获取学生信息时发生错误');
       }
     };
 
-      onMounted(() => {
-        fetchAllStudent();
-        fetchUsername();
-        fetchCourseData();
+    onMounted(() => {
+      fetchUsername();
+      fetchCourseData();
+      fetchMessages();
+      fetchAllStudent();
+    });
+
+    watch(() => selectedTab.value, (newTab) => {
+      if (newTab === 'notice') {
         fetchMessages();
-      });
+      } else if (newTab === 'student') {
+        fetchAllStudent();
+      }
+    });
 
-      return {
-        BUCKET_URL,
-        courseData,
-        selectedTab,
-        handleSelect,
-        goDiscussion,
-
-        username,
-        userType,
-        error,
-        uploadDialogVisible,
-        uploadForm,
-        showUploadDialog,
-        handleFileChange,
-        handleUpload,
-        handleDownload,
-        getContentTitle,
-
-        editDialogVisible,
-        editForm,
-        showEditDialog,
-        handleEditSubmit,
-
-        chatContainer,
-        userInput,
-        chatHistory,
-        handleSend,
-        updateChatHistory,
-        convertMarkdown,
-
-        fileStructure,
-        defaultProps,
-        searchQuery,
-        currentFolderContent,
-        newFolderDialogVisible,
-        newFolderName,
-        handleNodeClick,
-        filterNode,
-        handleAddFolder,
-        createNewFolder,
-        handleUploadFile,
-
-        messages,
-        info,
-        title,
-        fetchMessages,
-        deleteMessage,
-        sendMessage,
-
-        students,
-        fetchAllStudent,
-      };
-    },
-  };
+    return {
+      courseData,
+      selectedTab,
+      handleSelect,
+      username,
+      userType,
+      error,
+      uploadDialogVisible,
+      uploadForm,
+      showUploadDialog,
+      handleFileChange,
+      handleUpload,
+      editDialogVisible,
+      editForm,
+      showEditDialog,
+      handleEditSubmit,
+      messages,
+      students,
+      newFolderDialogVisible,
+      newFolderName,
+      createNewFolder,
+      deleteMessage,
+      sendMessage,
+      courseNo,
+    };
+  },
+};
 </script>
 
   
@@ -683,40 +336,10 @@
   background-color: #f5f7fa;
 }
 
-.course-header {
-  background-color: #4a69bd;
-  color: white;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.header-left {
-  display: flex;
-  flex-direction: column;
-}
-
-.course-title {
-  font-size: 28px;
-  margin: 0;
-  font-weight: 600;
-}
-
-.course-info {
-  font-size: 14px;
-  margin-top: 10px;
-  opacity: 0.9;
-}
-
 .course-content {
   display: flex;
   min-height: calc(100vh - 80px);
-}
-
-.sidebar {
-  background-color: #fff;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-}
+} 
 
 .main-content {
   flex-grow: 1;
@@ -744,155 +367,5 @@
 .content-actions {
   display: flex;
   gap: 10px;
-}
-
-/* Styles for student list */
-.course-student ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.course-student li {
-  background-color: #f0f4f8;
-  margin-bottom: 10px;
-  padding: 15px;
-  border-radius: 5px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.course-student h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #4a69bd;
-}
-
-.course-student p {
-  margin: 5px 0 0;
-  font-size: 18px;
-  color: #666;
-}
-
-/* Styles for AI Q&A */
-.course-AIhelper {
-  display: flex;
-  flex-direction: column;
-  height: 500px;
-}
-
-#chat-container {
-  flex-grow: 1;
-  overflow-y: auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-  padding: 15px;
-  margin-bottom: 15px;
-}
-
-.course-AIhelper .user, .course-AIhelper .ai {
-  margin-bottom: 15px;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-.course-AIhelper .user {
-  background-color: #e1f5fe;
-  align-self: flex-end;
-}
-
-.course-AIhelper .ai {
-  background-color: #f0f4f8;
-  align-self: flex-start;
-}
-
-.course-AIhelper input[type="text"] {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-bottom: 10px;
-}
-
-.course-AIhelper button {
-  padding: 10px 20px;
-  background-color: #4a69bd;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.course-AIhelper button:hover {
-  background-color: #3a559d;
-}
-
-/* Styles for course notifications */
-.course-notice ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.course-notice li {
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
-  margin-bottom: 15px;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.course-notice li p:first-child {
-  font-size: 18px;
-  font-weight: 600;
-  color: #4a69bd;
-  margin-bottom: 10px;
-}
-
-.course-notice li p:last-child {
-  font-size: 14px;
-  color: #666;
-}
-
-.course-notice button {
-  margin-top: 10px;
-  padding: 5px 10px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.course-notice button:hover {
-  background-color: #d32f2f;
-}
-
-.course-notice form div {
-  margin-top: 20px;
-}
-
-.course-notice input, .course-notice textarea {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-.course-notice textarea {
-  height: 100px;
-  resize: vertical;
-}
-
-.course-notice form button {
-  background-color: #4caf50;
-  padding: 10px 20px;
-}
-
-.course-notice form button:hover {
-  background-color: #45a049;
 }
 </style>
