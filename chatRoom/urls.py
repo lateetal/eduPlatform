@@ -6,9 +6,12 @@ import homepage
 urlpatterns = [
 
     path('<str:course_id>/discussion',views.showDiscussion.as_view(),name='discussionShow'),
+    path('<str:course_id>/discussion/filtered', views.filterDiscussion.as_view(),name='discussionFilter'),
     path('<str:course_id>/discussion/<str:dno>',views.showDiscussion.as_view(),name='discussionDelete'),
     path('<str:course_id>/discussion/<str:dno>/review',views.showReview.as_view(),name='reviewShow'),
+    path('<str:course_id>/discussion/<str:dno>/review/filtered',views.filterReview.as_view(),name='reviewFilter'),
     path('<str:course_id>/discussion/<str:dno>/review/<str:rno>',views.showReview.as_view(),name='reviewDelete'),
+
 
     path('Like/<str:rno>', views.Like.as_view(), name='likeReview'),
 

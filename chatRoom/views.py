@@ -9,6 +9,8 @@ from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussio
 from chatRoom.serializers import discussionSerializer, ReviewSerializer
 from homepage.views import extract_user_info_from_auth
 from login.models import User
+from fuzzywuzzy import fuzz
+from django.db.models import Q
 
 
 class showDiscussion(APIView):
@@ -86,6 +88,40 @@ class showDiscussion(APIView):
         discussion.save()
         return Response({"code":200,"message":'讨论已经成功编辑'})
 
+
+class filterDiscussion(APIView):
+    def get(self, request, course_id):
+        try:
+            keyword = request.data.get('keyword').strip()
+            if not keyword:
+                return Response({"code": 400, "message": "请输入关键词"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_id, user_type = extract_user_info_from_auth(request)
+
+            # 根据课程ID获取对应的讨论
+            discussions = Discussion.objects.filter(cno_id=course_id)
+
+            # 用来存储匹配的讨论
+            matched_discussions = []
+
+            # 用 fuzzywuzzy 比较每个讨论的标题和正文
+            for discussion in discussions:
+                title_score = fuzz.token_sort_ratio(discussion.dtitle, keyword)
+                info_score = fuzz.token_sort_ratio(discussion.dinfo, keyword)
+
+                # 如果标题或正文和关键词的相似度大于70就认为是匹配的
+                if title_score > 40 or info_score > 40:
+                    matched_discussions.append(discussion)
+
+            # 序列化匹配到的讨论
+            ser = discussionSerializer(matched_discussions, context={'user_id': user_id}, many=True)
+            return Response({"code": 200, "data": ser.data})
+
+        except Discussion.DoesNotExist:
+            return Response({'error': '课程未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class showReview(APIView):
     def get(self, request,course_id,dno):
         try:
@@ -155,7 +191,50 @@ class showReview(APIView):
             return Response({'error': '讨论未找到'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class filterReview(APIView):
+    def get(self, request, dno):
+        try:
+            # 获取用户的搜索关键词
+            keyword = request.data.get('keyword', '').strip()
+            if not keyword:
+                return Response({"code": 400, "message": "请输入关键词"}, status=status.HTTP_400_BAD_REQUEST)
 
+            # 获取当前用户的信息
+            user_id, user_type = extract_user_info_from_auth(request)
+
+            # 根据dno获取Discussion对象
+            discussion = Discussion.objects.get(dno=dno)
+
+            # 根据dno过滤出对应的评论（Review）
+            reviews = Review.objects.filter(dno_id=dno)
+
+            # 用来存储匹配的评论
+            matched_reviews = []
+
+            # 用 fuzzywuzzy 比较每个评论的rinfo和关键词
+            for review in reviews:
+                # 计算 rinfo 与关键词的相似度
+                rinfo_score = fuzz.token_sort_ratio(review.rinfo, keyword)
+
+                # 如果 rinfo 与关键词的相似度大于 40 就认为是匹配的
+                if rinfo_score > 40:
+                    matched_reviews.append(review)
+
+            # 序列化讨论信息
+            disSer = discussionSerializer(discussion)
+            disData = disSer.data
+
+            # 将匹配的评论序列化
+            disData['reviews'] = ReviewSerializer(matched_reviews, context={'user_id': user_id}, many=True).data
+
+            return Response({"code": 200, "data": disData})
+
+        except Discussion.DoesNotExist:
+            return Response({'error': '讨论未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Review.DoesNotExist:
+            return Response({'error': '评论未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class Like(APIView):
     def post(self, request, rno):
@@ -187,4 +266,5 @@ class Like(APIView):
             review.save()
             new_like = models.Like.objects.create(userNo=user, rno=review)
             return Response({"code": 200, "message": '点赞成功'})
+
 

@@ -180,14 +180,23 @@ export default {
       return new Date(dateString).toLocaleDateString('zh-CN', options);
     },
 
-    // 根据搜索查询过滤讨论内容
-    filterDiscussions() {
-      const query = this.searchQuery.toLowerCase();
-      this.filteredDiscussions = this.discussions.filter(discussion =>
-          discussion.dtitle.toLowerCase().includes(query) ||
-          discussion.dinfo.toLowerCase().includes(query)
-      );
-    },
+
+    
+filterDiscussions() {
+  const query = this.searchQuery.toLowerCase();
+  const queryWords = query.split(/\s+/); // 按空格分割搜索词
+
+  this.filteredDiscussions = this.discussions.filter(discussion => {
+    const title = discussion.dtitle.toLowerCase();
+    const info = discussion.dinfo.toLowerCase();
+
+    // 使用 Levenshtein 距离进行模糊匹配
+    const titleMatch = queryWords.some(word => this.levenshtein(title, word) <= 3);
+    const infoMatch = queryWords.some(word => this.levenshtein(info, word) <= 3);
+
+    return titleMatch || infoMatch;
+  });
+},
 
     // 初始化阿里云OSS客户端
     initOSSClient() {
