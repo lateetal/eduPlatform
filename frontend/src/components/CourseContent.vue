@@ -55,61 +55,7 @@
         </ul>
       </div>
       <div v-if="selectedTab === 'ppts'" class="course-ppts">
-        <div class="file-explorer">
-          <div class="file-search">
-            <el-input
-              v-model="searchQuery"
-              placeholder="输入资源名称查找"
-              prefix-icon="el-icon-search"
-            />
-          </div>
-          <el-tree
-            :data="fileStructure"
-            :props="defaultProps"
-            @node-click="handleNodeClick"
-            :filter-node-method="filterNode"
-            ref="fileTree"
-          >
-            <template #default="{ node, data }">
-              <span class="custom-tree-node">
-                <span>{{ node.label }}</span>
-                <span v-if="userType === 'teacher'">
-                  <el-button
-                    size="mini"
-                    type="text"
-                    @click.stop="() => handleAddFolder(data)"
-                  >
-                    新建文件夹
-                  </el-button>
-                  <el-button
-                    size="mini"
-                    type="text"
-                    @click.stop="() => handleUploadFile(data)"
-                  >
-                    上传文件
-                  </el-button>
-                </span>
-              </span>
-            </template>
-          </el-tree>
-        </div>
-        <el-table
-          :data="currentFolderContent"
-          style="width: 100%"
-        >
-          <el-table-column prop="name" label="目录名称" />
-          <el-table-column label="属性" width="100">
-            <template #default="scope">
-              <el-button
-                size="mini"
-                type="text"
-                @click="handleDownload(scope.row)"
-              >
-                下载
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <!-- implement ppts content-->
       </div>
   
       <div v-if="selectedTab === 'papers'" class="course-papers">
@@ -200,28 +146,6 @@
       const chatHistory = ref([]);
       const title = ref('');
       const info = ref('');
-      const searchQuery = ref('');
-      const currentFolderContent = ref([]);
-      const newFolderName = ref('');
-      const currentFolder = ref(null);
-  
-      const fileStructure = ref([
-        {
-          label: '电子课件',
-          children: [
-            { label: '第五章', children: [] },
-            { label: '第四章', children: [] },
-            { label: '第三章', children: [] },
-            { label: '第二章', children: [] },
-            { label: '第一章', children: [] },
-          ]
-        }
-      ]);
-  
-      const defaultProps = {
-        children: 'children',
-        label: 'label'
-      };
   
       const getContentTitle = () => {
         switch (props.selectedTab) {
@@ -243,26 +167,6 @@
       const handleDownload = () => {
         console.log('Download button clicked');
         // Implement download logic here
-      };
-  
-      const handleNodeClick = (data) => {
-        currentFolder.value = data;
-        currentFolderContent.value = data.children || [];
-      };
-  
-      const filterNode = (value, data) => {
-        if (!value) return true;
-        return data.label.includes(value);
-      };
-  
-      const handleAddFolder = (data) => {
-        currentFolder.value = data;
-        emit('show-new-folder-dialog');
-      };
-  
-      const handleUploadFile = (data) => {
-        console.log('Upload file to:', data.label);
-        // Implement file upload logic here
       };
   
       const updateChatHistory = () => {
@@ -321,18 +225,9 @@
         chatHistory,
         title,
         info,
-        fileStructure,
-        defaultProps,
-        searchQuery,
-        currentFolderContent,
-        newFolderName,
-        currentFolder,
+
         getContentTitle,
         handleDownload,
-        handleNodeClick,
-        filterNode,
-        handleAddFolder,
-        handleUploadFile,
         handleSend,
         updateChatHistory,
         convertMarkdown,
