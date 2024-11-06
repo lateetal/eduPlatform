@@ -55,6 +55,7 @@
             <button @click="postFavorite(discussion)" class="favorite-btn">
               {{ discussion.is_favourited ? '取消收藏' : '加入收藏' }}
             </button>
+            <button class="zan-btn">赞</button>
           </div>
         </div>
       </div>
@@ -348,7 +349,6 @@ export default {
 <style scoped>
 .discussion-board {
   font-family: Arial, sans-serif;
-  max-width: 800px;
   margin: 0 auto;
   padding: 20px;
   background-color: #f5f5f5;

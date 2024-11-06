@@ -216,7 +216,12 @@
     };
 
     const goHome = () => {
-      router.push('/student');
+      if(userType.value === 'student'){
+        router.push('/student');
+      }else if(userType.value === 'teacher'){
+        router.push('/teacher');
+      }
+      
     };
 
     const logout = () => {

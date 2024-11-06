@@ -52,13 +52,15 @@
             <i class="icon-bell"></i>
             通知公告
           </h2>
-          <ul class="notification-list">
+          <ul v-if="notifications.length > 0" class="notification-list">
             <li v-for="notification in notifications" :key="notification.id">
               <span class="notification-title">{{ notification.mtitle }}</span>
               <span class="notification-info">{{ notification.minfo }}</span>
               <span class="notification-date">{{ formatDate(notification.mtime) }}</span>
             </li>
           </ul>
+          <p v-else-if="notice_error">{{ notice_error }}</p>
+          <p v-else>暂无数据</p>
         </div>
       </div>
     </main>
@@ -157,10 +159,10 @@ export default {
           this.notifications = response.data.data || [];
           console.log(this.notifications);
         } else {
-          this.error = '获取通知失败';
+          this.notice_error = '获取通知失败';
         }
       } catch (err) {
-        this.error = err.message;
+        this.notice_error = err.message;
       }
     },
     handleCourseClick(courseNo) {
