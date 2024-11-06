@@ -96,7 +96,6 @@ export default {
       userType: '',
       loading: true,
       error: null,
-      notice_error: null,
       notifications: [],
       BUCKET_URL,
     }
@@ -147,10 +146,10 @@ export default {
           this.notifications = response.data.data || [];
           console.log(this.notifications);
         } else {
-          this.notice_error = '获取通知失败';
+          this.error = '获取通知失败';
         }
       } catch (err) {
-        this.notice_error = err.message;
+        this.error = err.message;
       }
     },
 

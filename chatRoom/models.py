@@ -38,3 +38,11 @@ class Favorite(models.Model):
     dno = models.ForeignKey('Discussion', on_delete=models.CASCADE)
     userNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
 
+class atMessage(models.Model):
+    rno = models.ForeignKey('Review', on_delete=models.CASCADE)#属于哪条回复
+    senderno = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    receiverno = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
+    sendTime = models.DateTimeField(auto_now_add=True)
+    status = models.BooleanField(default=False)
+
+

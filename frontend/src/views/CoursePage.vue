@@ -109,8 +109,8 @@
           <p v-else>No PDF available</p>
         </div>
         <div v-if="selectedTab === 'calendar'" class="course-calendar">
-          <div v-if="courseData?.data?.calender" class="pdf-container">
-            <VuePdfEmbed annotation-layer text-layer :source="BUCKET_URL + courseData.data.calender" />
+          <div v-if="courseData?.data?.calendar" class="pdf-container">
+            <VuePdfEmbed annotation-layer text-layer :source="BUCKET_URL + courseData.data.calendar" />
           </div>
           <p v-else>No PDF available</p>
         </div>
@@ -455,8 +455,8 @@
         }
       };
 
+      //处理文件下载
       const handleDownload = () => {
-        console.log('Download button clicked');
       };
 
       const showEditDialog = () => {

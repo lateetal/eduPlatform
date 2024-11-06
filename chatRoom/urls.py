@@ -11,5 +11,6 @@ urlpatterns = [
     path('<str:course_id>/discussion/<str:dno>/review/<str:rno>',views.showReview.as_view(),name='reviewDelete'),
 
     path('Like/<str:rno>', views.Like.as_view(), name='likeReview'),
+    path('atmessage', views.AtMessageView.as_view(), name='atMessage'),
 
 ]

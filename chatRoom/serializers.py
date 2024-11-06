@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 import chatRoom
-from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite
+from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite, atMessage
 from homepage.models import CourseMessage
 
 
@@ -67,3 +67,18 @@ class FavoriteSerializer(serializers.ModelSerializer):
         discussion = obj.dno
         return discussionDetailSerializer(discussion).data
 
+class AtMessageSerializer(serializers.ModelSerializer):
+    # 定义一个方法字段来动态获取 dno
+    dno = serializers.SerializerMethodField()
+
+    class Meta:
+        model = atMessage
+        fields = '__all__'
+
+    def get_dno(self, obj):
+        # 获取与 atMessage 实例关联的 rno 对应的 Review 实例
+        try:
+            review = Review.objects.get(rno=obj.rno_id)  # 通过 rno 查找 Review 实例
+            return review.dno.dno  # 返回 dno 的值
+        except Review.DoesNotExist:
+            return None  # 如果没有找到对应的 Review 实例，返回 None
