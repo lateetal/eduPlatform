@@ -5,6 +5,7 @@ import LoginPage from "@/views/LoginPage.vue";
 import CoursePage from "@/views/CoursePage.vue";
 import Review from "@/components/Review.vue"
 import PersonalHome from "@/views/PersonalHome.vue";
+import UserView from "@/views/UserView.vue";
 
 
 const routes = [
@@ -41,6 +42,11 @@ const routes = [
       path:"/home",
       name:"PersonalHome",
       component: PersonalHome
+    },
+    {
+      path:"/user/:userId",
+      name:"UserView",
+      component:UserView
     },
 ];
 

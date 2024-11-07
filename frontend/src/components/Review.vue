@@ -1,7 +1,13 @@
 <template>
   <div class="discussion-board">
     <div class="container">
-      <h2 class="title">{{ discussion.dtitle }}</h2>
+      <div class="title-container">
+        <h2 class="title">{{ discussion.dtitle }}</h2>
+        <button class="btn btn-ghost" @click="goBack">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </button>
+      </div>
 
       <!-- 搜索功能 -->
       <div class="search-bar">
@@ -23,7 +29,7 @@
       <div v-else-if="discussion" class="discussion-item">
         <p class="discussion-content">{{ discussion.dinfo }}</p>
         <div class="discussion-meta">
-          <span class="author">{{ discussion.ownerNo }}</span>
+          <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerNo }}</span>
           <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
         </div>
 
@@ -48,7 +54,7 @@
         <div v-for="comment in filteredReviews" :key="comment.rno" class="discussion-item">
           <p class="discussion-content">{{ comment.rinfo }}</p>
           <div class="discussion-meta">
-            <span class="author">{{ comment.ownerNo }}</span>
+            <span class="author" @click="goToUser(comment.ownerNo)">{{ comment.ownerNo }}</span>
             <span class="post-time">发表于：{{ formatDate(comment.postTime) }}</span>
           </div>
           <p>点赞数：{{ comment.likeNum }}</p>
@@ -109,6 +115,8 @@
 <script>
 import axios from 'axios';
 import OSS from 'ali-oss';
+import { useRouter } from 'vue-router';
+import { ArrowLeft } from '@element-plus/icons-vue';
 
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
 const API_URL = 'http://localhost:8000/chatRoom/';
@@ -129,6 +137,9 @@ instance.interceptors.request.use(config => {
 
 export default {
   name: 'ReviewPage',
+  components:{
+    ArrowLeft,
+  },
   data() {
     return {
       BUCKET_URL,
@@ -143,7 +154,8 @@ export default {
       imagePreviews: [],
       ossClient: null,
       courseNo: '',
-      dno: ''
+      dno: '',
+      router: '',
     };
   },
   created() {
@@ -151,6 +163,7 @@ export default {
     this.courseNo = this.$route.params.courseNo;
     this.dno = this.$route.params.dno;
     this.fetchDiscussionDetail();
+    this.router = useRouter();
   },
   methods: {
     initOSSClient() {
@@ -283,6 +296,12 @@ export default {
       } catch (err) {
         this.error = `操作失败: ${err.message}`;
       }
+    },
+    goToUser(userNo){
+      this.router.push(`/user/${userNo}`);
+    },
+    goBack(){
+      this.router.go(-1);
     }
   }
 };
@@ -302,10 +321,31 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; 
+}
+
 .title {
   font-size: 24px;
   color: #333;
   margin-bottom: 20px;
+}
+
+.btn {
+  background-color: transparent;
+  border: 1px solid #333;
+  padding: 8px 16px;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-ghost:hover {
+  background-color: #f0f0f0;
 }
 
 .subtitle {
@@ -396,6 +436,12 @@ export default {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+
+.author:hover {
+  color: #4769ff; 
+  font-weight: bold; 
+  cursor: pointer;  
 }
 
 .image-gallery {

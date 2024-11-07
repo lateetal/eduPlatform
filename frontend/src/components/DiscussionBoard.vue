@@ -28,7 +28,7 @@
           <h3 @click="goToDiscussionDetail(discussion.dno)" class="discussion-title">{{ discussion.dtitle }}</h3>
           <p @click="goToDiscussionDetail(discussion.dno)" class="discussion-content">{{ discussion.dinfo }}</p>
           <div class="discussion-meta">
-            <span class="author">{{ discussion.ownerNo }}</span>
+            <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerNo }}</span>
             <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
           </div>
           <p v-if="discussion.havePic" class="has-image">此帖有图片</p>
@@ -372,6 +372,10 @@ export default {
       }
     };
 
+    const goToUser = (userNo) => {
+      router.push(`/user/${userNo}`);
+    }
+
     onMounted(() => {
       initOSSClient();
       fetchDiscussions();
@@ -401,7 +405,8 @@ export default {
       goToDiscussionDetail,
       postFavorite,
       prevPage,
-      nextPage
+      nextPage,
+      goToUser,
     };
   }
 };
@@ -516,6 +521,12 @@ export default {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+
+.author:hover {
+  color: #4769ff; 
+  font-weight: bold; 
+  cursor: pointer;  
 }
 
 .has-image {

@@ -106,7 +106,7 @@ export default {
   mounted() {
     this.fetchSubjects();
     this.fetchUsername();
-    this.fetchCourseMessage(); // Fetch notifications when mounted
+    this.fetchCourseMessage(); 
   },
   methods: {
     async fetchSubjects() {
