@@ -90,7 +90,7 @@ class showDiscussion(APIView):
 
 
 class filterDiscussion(APIView):
-    def get(self, request, course_id):
+    def post(self, request, course_id):
         try:
             keyword = request.data.get('keyword').strip()
             if not keyword:
@@ -118,7 +118,7 @@ class filterDiscussion(APIView):
             return Response({"code": 200, "data": ser.data})
 
         except Discussion.DoesNotExist:
-            return Response({'error': '课程未找到'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': '讨论未找到'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -192,7 +192,7 @@ class showReview(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class filterReview(APIView):
-    def get(self, request, dno):
+    def post(self, request, course_id,dno):
         try:
             # 获取用户的搜索关键词
             keyword = request.data.get('keyword', '').strip()

@@ -3,7 +3,6 @@ import TeacherHome from "@/views/TeacherHome.vue";
 import StudentHome from "@/views/StudentHome.vue";
 import LoginPage from "@/views/LoginPage.vue";
 import CoursePage from "@/views/CoursePage.vue";
-import DiscussionBoard from "@/views/DiscussionBoard.vue";
 import Review from "@/components/Review.vue"
 import PersonalHome from "@/views/PersonalHome.vue";
 
@@ -32,11 +31,6 @@ const routes = [
       path:"/course/:courseNo",
       name:"CoursePage",
       component: CoursePage
-    },
-    {
-      path:"/course/:courseNo/discussion/",
-      name:"DiscussionBoard",
-      component: DiscussionBoard
     },
     {
       path:"/course/:courseNo/discussion/:dno",

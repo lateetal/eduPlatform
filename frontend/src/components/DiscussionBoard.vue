@@ -1,16 +1,14 @@
 <template>
   <div class="discussion-board">
     <div class="container">
-      <h2 class="title">讨论区 {{ currentPath }}</h2>
-
       <!-- 搜索功能 -->
       <div class="search-bar">
         <input
           type="text"
           v-model="searchQuery"
-          @input="filterDiscussions"
           placeholder="搜索讨论标题或内容"
         />
+        <button @click="filterDiscussions">查找</button>
       </div>
 
       <!-- 显示加载状态 -->
@@ -20,13 +18,13 @@
       </div>
 
       <!-- 如果没有讨论 -->
-      <div v-else-if="filteredDiscussions.length === 0" class="no-discussions">
+      <div v-else-if="paginatedDiscussions.length === 0" class="no-discussions">
         暂无讨论帖子。
       </div>
 
       <!-- 显示讨论列表 -->
       <div v-else class="discussion-list">
-        <div v-for="discussion in filteredDiscussions" :key="discussion.dno" class="discussion-item">
+        <div v-for="discussion in paginatedDiscussions" :key="discussion.dno" class="discussion-item">
           <h3 @click="goToDiscussionDetail(discussion.dno)" class="discussion-title">{{ discussion.dtitle }}</h3>
           <p @click="goToDiscussionDetail(discussion.dno)" class="discussion-content">{{ discussion.dinfo }}</p>
           <div class="discussion-meta">
@@ -58,6 +56,13 @@
             <button class="zan-btn">赞</button>
           </div>
         </div>
+      </div>
+
+      <!-- 分页控件 -->
+      <div class="pagination">
+        <button @click="prevPage" :disabled="currentPage === 1">上一页</button>
+        <span>{{ currentPage }} / {{ totalPages }}</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">下一页</button>
       </div>
     </div>
 
@@ -111,6 +116,8 @@
 </template>
 
 <script>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import OSS from 'ali-oss';
 
@@ -131,152 +138,154 @@ instance.interceptors.request.use(config => {
 });
 
 export default {
-  data() {
-    return {
-      BUCKET_URL,
-      discussions: [], // 所有讨论
-      filteredDiscussions: [], // 经过过滤的讨论列表
-      loading: true,
-      searchQuery: '', // 搜索关键字
+  name: 'DiscussionBoard',
+  props: {
+    courseNo: {
+      type: String,
+      required: true
+    }
+  },
+  setup(props) {
+    const router = useRouter();
+    const discussions = ref([]);
+    const filteredDiscussions = ref([]);
+    const loading = ref(true);
+    const searchQuery = ref('');
+    const title = ref('');
+    const content = ref('');
+    const selectedFiles = ref([]);
+    const imagePreviews = ref([]);
+    const ossClient = ref(null);
+    const isEditing = ref(false);
+    const editingDiscussion = ref({});
+    const currentPage = ref(1);
+    const itemsPerPage = 3;
 
-      title: '',
-      content: '',
-      selectedFiles: [],
-      imagePreviews: [],
-      ossClient: null,
-
-      isEditing: false,
-      editingDiscussion:{},
-      selectedImage:null,
-      courseNo: this.$route.params.courseNo,
+    const initOSSClient = () => {
+      ossClient.value = new OSS({
+        region: 'oss-cn-beijing',
+        accessKeyId: 'LTAI5tAtNfQg5VqN22gT3Tsn',
+        accessKeySecret: 'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf',
+        bucket: 'edu-platform-2024',
+      });
     };
-  },
-  created() {
-    this.initOSSClient();
-    this.fetchDiscussions();
-  },
-  methods: {
-    // 获取讨论数据
-    async fetchDiscussions() {
-      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
+
+    const fetchDiscussions = async () => {
+      const API_URL = `http://localhost:8000/chatRoom/${props.courseNo}/discussion`;
       try {
         const response = await instance.get(API_URL);
         if (response.data.code === 200) {
-          this.discussions = response.data.data;
-          this.filteredDiscussions = this.discussions; // 初始化时不进行过滤
+          discussions.value = response.data.data;
+          filteredDiscussions.value = discussions.value;
         } else {
           console.error('获取讨论失败', response.data);
         }
       } catch (error) {
         console.error('请求失败', error);
       } finally {
-        this.loading = false;
+        loading.value = false;
       }
-    },
+    };
 
-    // 格式化日期
-    formatDate(dateString) {
+    const filterDiscussions = async () => {
+      if (!searchQuery.value.trim()) {
+        filteredDiscussions.value = discussions.value;
+        return;
+      }
+
+      loading.value = true;
+      const API_URL = `http://localhost:8000/chatRoom/${props.courseNo}/discussion/filtered`;
+      
+      try {
+        const response = await instance.post(API_URL, {
+          keyword: searchQuery.value.trim()
+        });
+
+        if (response.data.code === 200) {
+          filteredDiscussions.value = response.data.data;
+          currentPage.value = 1; // Reset to first page after filtering
+        } else {
+          console.error('过滤讨论失败', response.data);
+          alert('过滤讨论失败，请重试');
+        }
+      } catch (error) {
+        console.error('请求失败', error);
+        alert('请求失败，请重试');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const formatDate = (dateString) => {
       const options = {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'};
       return new Date(dateString).toLocaleDateString('zh-CN', options);
-    },
+    };
 
-
-    
-filterDiscussions() {
-  const query = this.searchQuery.toLowerCase();
-  const queryWords = query.split(/\s+/); // 按空格分割搜索词
-
-  this.filteredDiscussions = this.discussions.filter(discussion => {
-    const title = discussion.dtitle.toLowerCase();
-    const info = discussion.dinfo.toLowerCase();
-
-    // 使用 Levenshtein 距离进行模糊匹配
-    const titleMatch = queryWords.some(word => this.levenshtein(title, word) <= 3);
-    const infoMatch = queryWords.some(word => this.levenshtein(info, word) <= 3);
-
-    return titleMatch || infoMatch;
-  });
-},
-
-    // 初始化阿里云OSS客户端
-    initOSSClient() {
-      this.ossClient = new OSS({
-        region: 'oss-cn-beijing', // 例如 'oss-cn-hangzhou'
-        accessKeyId: 'LTAI5tAtNfQg5VqN22gT3Tsn',
-        accessKeySecret: 'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf',
-        bucket: 'edu-platform-2024',
-      });
-    },
-    // 发起新讨论
-    handleFileUpload(event) {
+    const handleFileUpload = (event) => {
       const files = Array.from(event.target.files);
-      if (files.length + this.selectedFiles.length > 9) {
+      if (files.length + selectedFiles.value.length > 9) {
         alert('最多只能上传9张图片！');
         return;
       }
 
-      this.selectedFiles = [...this.selectedFiles, ...files];
-      this.imagePreviews = this.selectedFiles.map(file => URL.createObjectURL(file));
-    },
-    async uploadImages() {
+      selectedFiles.value = [...selectedFiles.value, ...files];
+      imagePreviews.value = selectedFiles.value.map(file => URL.createObjectURL(file));
+    };
+
+    const uploadImages = async () => {
       const uploadedImageUrls = [];
 
-      for (const file of this.selectedFiles) {
-        const fileName = `course/pic/${Date.now()}_${file.name}`; // 根据需要生成文件名
+      for (const file of selectedFiles.value) {
+        const fileName = `course/pic/${Date.now()}_${file.name}`;
         try {
-          const result = await this.ossClient.put(fileName, file);
+          const result = await ossClient.value.put(fileName, file);
           uploadedImageUrls.push(result.url);
         } catch (error) {
           console.error('上传失败:', error);
         }
       }
       return uploadedImageUrls;
-    },
-    async submitPost() {
-      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
-      if (!this.title || !this.content) {
+    };
+
+    const submitPost = async () => {
+      const API_URL = `http://localhost:8000/chatRoom/${props.courseNo}/discussion`;
+      if (!title.value || !content.value) {
         alert('请填写标题和正文！');
         return;
       }
 
-      const uploadedImages = await this.uploadImages();
+      const uploadedImages = await uploadImages();
 
-      // 提交帖子数据
       const postData = {
-        title: this.title,
-        content: this.content,
+        title: title.value,
+        content: content.value,
         images: uploadedImages,
       };
 
       try {
-        // 使用 axios 提交数据到后端接口
         const response = await instance.post(API_URL, postData);
         console.log('帖子提交响应:', response.data);
         alert('帖子提交成功！');
-        await this.fetchDiscussions();
+        await fetchDiscussions();
       } catch (error) {
         console.error('帖子提交失败:', error);
         alert('帖子提交失败，请重试！');
       }
 
-      // 清空表单
-      this.title = '';
-      this.content = '';
-      this.selectedFiles = [];
-      this.imagePreviews = [];
-    },
+      title.value = '';
+      content.value = '';
+      selectedFiles.value = [];
+      imagePreviews.value = [];
+    };
 
-
-    // 删除讨论
-    async deleteDiscussion(dno) {
-      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
-      if (confirm('确定要删除该讨论吗？')) { // 确认提示
+    const deleteDiscussion = async (dno) => {
+      const API_URL = `http://localhost:8000/chatRoom/${props.courseNo}/discussion`;
+      if (confirm('确定要删除该讨论吗？')) {
         try {
-          const response = await instance.delete(`${API_URL}/${dno}`); // 使用 dno 进行删除请求
+          const response = await instance.delete(`${API_URL}/${dno}`);
           if (response.data.code === 200) {
-            // 删除成功，重新获取讨论列表
             alert('讨论已删除');
-            this.fetchDiscussions(); // 重新加载讨论列表
+            await fetchDiscussions();
           } else {
             console.error('删除失败', response.data);
           }
@@ -284,29 +293,27 @@ filterDiscussions() {
           console.error('请求失败', error);
         }
       }
-    },
+    };
 
-    // 编辑讨论
-    editDiscussion(discussion) {
-      this.editingDiscussion = { ...discussion }; // 深拷贝讨论数据
-      this.isEditing = true; // 设置为编辑状态
-      this.imagePreviews = []; // 清空预览
-    },
+    const editDiscussion = (discussion) => {
+      editingDiscussion.value = { ...discussion };
+      isEditing.value = true;
+      imagePreviews.value = [];
+    };
 
-    // 更新讨论
-    async updateDiscussion() {
-      const API_URL = `http://localhost:8000/chatRoom/${this.courseNo}/discussion`
+    const updateDiscussion = async () => {
+      const API_URL = `http://localhost:8000/chatRoom/${props.courseNo}/discussion`;
       if (confirm('确定要保存更改吗？')) {
         try {
-          const response = await instance.put(`${API_URL}/${this.editingDiscussion.dno}`, {
-            dtitle: this.editingDiscussion.dtitle,
-            dinfo: this.editingDiscussion.dinfo
+          const response = await instance.put(`${API_URL}/${editingDiscussion.value.dno}`, {
+            dtitle: editingDiscussion.value.dtitle,
+            dinfo: editingDiscussion.value.dinfo
           });
 
           if (response.data.code === 200) {
             alert('讨论已更新');
-            await this.fetchDiscussions(); // 重新加载讨论列表
-            this.cancelEdit(); // 取消编辑状态
+            await fetchDiscussions();
+            cancelEdit();
           } else {
             console.error('编辑失败', response.data);
           }
@@ -314,53 +321,97 @@ filterDiscussions() {
           console.error('请求失败', error);
         }
       }
-    },
+    };
 
-    // 取消编辑
-    cancelEdit() {
-      this.isEditing = false; // 退出编辑状态
-      this.editingDiscussion = {}; // 清空编辑内容
-      this.imagePreviews = []; // 清空预览
-    },
+    const cancelEdit = () => {
+      isEditing.value = false;
+      editingDiscussion.value = {};
+      imagePreviews.value = [];
+    };
 
+    const goToDiscussionDetail = (dno) => {
+      router.push(`/course/${props.courseNo}/discussion/${dno}`);
+    };
 
-    // 跳转到讨论详情页
-    goToDiscussionDetail(dno) {
-      this.$router.push({name: 'Review', params: {dno}});
-    },
-
-    //对收藏进行操作
-    async postFavorite(discussion){
-      const API_URL = `http://localhost:8000/homepage/favorite/${discussion.dno}`
+    const postFavorite = async (discussion) => {
+      const API_URL = `http://localhost:8000/homepage/favorite/${discussion.dno}`;
       const hit = discussion.is_favourited ? '确定要取消收藏' : '确定要加入收藏';
       const hit2 = discussion.is_favourited ? '取消收藏成功' : '加入收藏成功';
-     if (confirm(hit)) { // 确认提示
+      if (confirm(hit)) {
         try {
-          const response = await instance.post(API_URL); // 使用 dno 进行删除请求
+          const response = await instance.post(API_URL);
           if (response.data.code === 200) {
-            // 删除成功，重新获取讨论列表
             alert(hit2);
-            await this.fetchDiscussions();
+            await fetchDiscussions();
           } else {
-            console.error('添加收藏失败失败', response.data);
+            console.error('添加收藏失败', response.data);
           }
         } catch (error) {
           console.error('请求失败', error);
         }
       }
-  },
-  },
+    };
 
+    const paginatedDiscussions = computed(() => {
+      const start = (currentPage.value - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      return filteredDiscussions.value.slice(start, end);
+    });
 
+    const totalPages = computed(() => Math.ceil(filteredDiscussions.value.length / itemsPerPage));
+
+    const prevPage = () => {
+      if (currentPage.value > 1) {
+        currentPage.value--;
+      }
+    };
+
+    const nextPage = () => {
+      if (currentPage.value < totalPages.value) {
+        currentPage.value++;
+      }
+    };
+
+    onMounted(() => {
+      initOSSClient();
+      fetchDiscussions();
+    });
+
+    return {
+      BUCKET_URL,
+      paginatedDiscussions,
+      loading,
+      searchQuery,
+      title,
+      content,
+      selectedFiles,
+      imagePreviews,
+      isEditing,
+      editingDiscussion,
+      currentPage,
+      totalPages,
+      filterDiscussions,
+      formatDate,
+      handleFileUpload,
+      submitPost,
+      deleteDiscussion,
+      editDiscussion,
+      updateDiscussion,
+      cancelEdit,
+      goToDiscussionDetail,
+      postFavorite,
+      prevPage,
+      nextPage
+    };
+  }
 };
 </script>
 
-<style scoped>
+<style>
 .discussion-board {
   font-family: Arial, sans-serif;
-  margin: 0 auto;
-  padding: 20px;
   background-color: #f5f5f5;
+  padding: 20px;
 }
 
 .container {
@@ -378,14 +429,28 @@ filterDiscussions() {
 
 .search-bar {
   margin-bottom: 20px;
+  display: flex;
 }
 
 .search-bar input {
-  width: 100%;
+  flex-grow: 1;
   padding: 10px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 4px 0 0 4px;
   font-size: 16px;
+}
+
+.search-bar button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+
+.search-bar button:hover {
+  background-color: #45a049;
 }
 
 .loading {
@@ -506,6 +571,11 @@ filterDiscussions() {
   color: white;
 }
 
+.zan-btn {
+  background-color: #3498db;
+  color: white;
+}
+
 .action-buttons button:hover {
   opacity: 0.8;
 }
@@ -592,5 +662,31 @@ filterDiscussions() {
 
 .image-preview h4 {
   margin-bottom: 10px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination button {
+  padding: 5px 10px;
+  margin: 0 5px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  margin: 0 10px;
 }
 </style>
