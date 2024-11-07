@@ -1,15 +1,16 @@
 from rest_framework import serializers
 
 import chatRoom
-from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite, atMessage
-from homepage.models import CourseMessage
+from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite, atMessage, FavoritesFolder, \
+    DiscussionLike
 from login.models import User
 
-
+#!!!!要解决的部分
 #课程中讨论的展示
 class discussionSerializer(serializers.ModelSerializer):
     pictures = serializers.SerializerMethodField()
-    is_favourited = serializers.SerializerMethodField()
+    # is_favourited = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
     ownerName = serializers.SerializerMethodField()
 
     class Meta:
@@ -20,10 +21,10 @@ class discussionSerializer(serializers.ModelSerializer):
             pictures = PictureDisscussion.objects.filter(dno=obj)
             return PictureDisscussionSerializer(pictures,many=True).data
         return []
-    def get_is_favourited(self, obj):
-        user_id = self.context.get('user_id')
-        if user_id is not None:
-            return Favorite.objects.filter(dno=obj,userNo_id=user_id).exists()
+    # def get_is_favourited(self, obj):
+    #     user_id = self.context.get('user_id')
+    #     if user_id is not None:
+    #         return Favorite.objects.filter(dno=obj,userNo_id=user_id).exists()
         return False
     def get_ownerName(self, obj):
         user_id = obj.ownerNo_id
@@ -31,10 +32,22 @@ class discussionSerializer(serializers.ModelSerializer):
             username = User.objects.get(pk=user_id).username
             return username
         return False
+    def get_is_liked(self, obj):
+        user_id = self.context.get('user_id')
+        dno = obj.dno
+        try:
+            # 尝试查询是否存在这个用户的点赞记录
+            DiscussionLike.objects.get(userNo_id=user_id, dno=dno)
+            return True  # 找到记录，则返回 True
+        except DiscussionLike.DoesNotExist:
+            # 如果找不到记录，则返回 False
+            return False
+
 
 #回帖详细信息
 class ReviewSerializer(serializers.ModelSerializer):
     pictures = serializers.SerializerMethodField()
+    discussion_is_liked = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()
 
@@ -54,6 +67,14 @@ class ReviewSerializer(serializers.ModelSerializer):
     def get_username(self, obj):
         user = User.objects.get(id=obj.ownerNo_id)
         return user.username
+    def get_discussion_is_liked(self, obj):
+        user_id = self.context.get('user_id')
+        dno = obj.dno
+        try:
+            DiscussionLike.objects.get(userNo_id=user_id, dno=dno)
+            return True  # 找到记录，则返回 True
+        except DiscussionLike.DoesNotExist:
+            return False
 
 
 class discussionDetailSerializer(discussionSerializer):
@@ -108,3 +129,24 @@ class AtMessageSerializer(serializers.ModelSerializer):
         dno = Review.objects.get(rno=obj.rno_id).dno_id
         cno = Discussion.objects.get(dno=dno).cno_id
         return cno
+
+#无详细信息的收藏夹序列化
+class FloderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FavoritesFolder
+        fields = '__all__'
+
+class FloderDetailSerializer(serializers.ModelSerializer):
+    favorites = FavoriteSerializer(source='favorite_set', many=True)
+
+    class Meta:
+        model = FavoritesFolder
+        fields = '__all__'
+#属于FloderDetailSerializer进行嵌套序列化
+class FavoriteSerializer(serializers.ModelSerializer):
+    # 通过外键 dno 获取 Discussion 中的 dtitle 字段
+    dtitle = serializers.CharField(source='dno.dtitle')
+
+    class Meta:
+         model = Favorite
+         fields = ['fno', 'dtitle']

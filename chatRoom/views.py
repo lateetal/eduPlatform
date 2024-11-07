@@ -5,8 +5,9 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 import chatRoom
 from chatRoom import models
-from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage
-from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer
+from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage, FavoritesFolder,Favorite
+from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer, FloderSerializer, \
+    FloderDetailSerializer
 from homepage.views import extract_user_info_from_auth
 from login.models import User
 from fuzzywuzzy import fuzz
@@ -128,7 +129,7 @@ class showReview(APIView):
             user_id, user_type = extract_user_info_from_auth(request)
             discussion = Discussion.objects.get(dno=dno)
             reviews = Review.objects.filter(dno_id=dno)
-            disSer = discussionSerializer(discussion)
+            disSer = discussionSerializer(discussion, context={'user_id':user_id}, many=False)
             disData = disSer.data
             disData['reviews'] = ReviewSerializer(reviews, context={'user_id':user_id},many = True).data
 
@@ -267,6 +268,37 @@ class Like(APIView):
             new_like = models.Like.objects.create(userNo=user, rno=review)
             return Response({"code": 200, "message": '点赞成功'})
 
+class DiscussionLikeView(APIView):
+    def post(self, request,dno):
+        # 提取用户信息
+        user_id, user_type = extract_user_info_from_auth(request)
+        # 尝试获取用户和评论
+        try:
+            user = User.objects.get(pk=user_id)
+            discussion = chatRoom.models.Discussion.objects.get(dno=dno)
+        except User.DoesNotExist:
+            return Response({'error': '用户未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Review.DoesNotExist:
+            return Response({'error': '回复未找到'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 检查用户是否已经点赞
+        existing_like = chatRoom.models.DiscussionLike.objects.filter(userNo=user, dno=discussion).first()
+
+        if existing_like:
+            # 如果存在，则删除点赞
+            discussion.like = discussion.like - 1
+            discussion.save()
+            # ser = ReviewSerializer(review)
+            existing_like.delete()
+            return Response({"code": 200, "message": '取消点赞成功'})
+        else:
+            # 如果不存在，则创建新的点赞
+            discussion.like = discussion.like + 1
+            discussion.save()
+            new_like = models.DiscussionLike.objects.create(userNo=user, dno=discussion)
+            return Response({"code": 200, "message": '点赞成功'})
+
+
 class AtMessageView(APIView):
     def get(self,request):
         user_id, user_type = extract_user_info_from_auth(request)
@@ -284,3 +316,81 @@ class AtMessageView(APIView):
         message.save()
 
         return Response({"code": 200, "message": '消息已读'})
+
+#用户看他人也通过这个接口来找，根据status来决定展示与否
+class FavoriteFolder(APIView):
+    def get(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        folder = FavoritesFolder.objects.filter(userNo_id=user_id)
+        ser = FloderSerializer(folder, many=True)
+
+        return Response({"code": 200, "data": ser.data})
+
+    def post(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        fname = request.data.get('fname')
+        fstatus = request.data.get('fstatus')#可能前端应该是一个按钮
+
+        models.FavoritesFolder.objects.create(userNo_id=user_id, fname=fname, fstatus=fstatus)
+
+        return Response({"code": 200, "message": "收藏夹创建成功"})
+
+    def delete(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        fname = request.data.get('fname')
+
+        models.FavoritesFolder.objects.filter(userNo_id=user_id, fname=fname).delete()
+        return Response({"code": 200, "message": "收藏夹删除成功"})
+
+    def put(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        fno = request.data.get('fno')
+        fstatus = request.data.get('fstatus')
+        fname = request.data.get('fname')
+
+        folder = FavoritesFolder.objects.get(pk=fno)
+        folder.fstatus = fstatus
+        folder.fname = fname
+        folder.save()
+
+        return Response({"code": 200, "message": "收藏夹修改成功"})
+
+class FavoriteFolderDetail(APIView):
+    def get(self,request,fno):
+        user_id, user_type = extract_user_info_from_auth(request)
+        folder = FavoritesFolder.objects.get(pk=fno)
+        ser = FloderDetailSerializer(folder,many=False)
+
+        return Response({"code": 200, "data": ser.data})
+
+    def post(self,request,fno):
+        user_id, user_type = extract_user_info_from_auth(request)
+        dno = request.data.get('dno')
+        models.Favorite.objects.create(fno_id=fno, dno_id=dno)
+
+        return Response({"code": 200, "message": "帖子收藏成功"})
+
+    def delete(self,request,fno):
+        user_id, user_type = extract_user_info_from_auth(request)
+        dno = request.data.get('dno')
+        Favorite.objects.get(dno_id=dno).delete()
+
+        return  Response({"code": 200, "message": "帖子收藏删除成功"})
+
+    def put(self,request,fno):
+        user_id, user_type = extract_user_info_from_auth(request)
+        dno = request.data.get('dno')
+        newFno = request.data.get('newFno')
+
+        favor = Favorite.objects.get(dno_id=dno,fno=fno)
+        favor.fno_id = newFno
+        favor.save()
+
+        return Response({"code": 200, "message": "帖子收藏移动成功"})
+
+
+
+
+
+
+

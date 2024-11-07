@@ -31,6 +31,10 @@
         <div class="discussion-meta">
           <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerName }}</span>
           <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
+          <span class="like_num">点赞数：{{ discussion.like }}</span>
+          <button @click="likeDiscussion(discussion)" class="favorite-btn">
+              {{ discussion.is_liked ? '取消点赞' : '点赞' }}
+          </button>
         </div>
 
         <!-- 展示图片 -->
@@ -291,6 +295,17 @@ export default {
         const response = await instance.post(`${API_URL}Like/${comment.rno}`);
         if (response.status === 200) {
           alert(comment.is_liked ? '取消点赞成功' : '点赞成功');
+          await this.fetchDiscussionDetail();
+        }
+      } catch (err) {
+        this.error = `操作失败: ${err.message}`;
+      }
+    },
+    async likeDiscussion(discussion) {
+      try {
+        const response = await instance.post(`${API_URL}DiscussionLike/${discussion.dno}`);
+        if (response.status === 200) {
+          alert(discussion.is_liked ? '取消点赞成功' : '点赞成功');
           await this.fetchDiscussionDetail();
         }
       } catch (err) {

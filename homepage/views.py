@@ -117,38 +117,6 @@ class UpdateCourseIntro(APIView):
         # 返回更新后的课程数据
         serializer = courseDetailSerializer(course)
         return Response(serializer.data, status=status.HTTP_200_OK)
-class Favorites(APIView):
-    def get(self, request):
-        user_id, user_type = extract_user_info_from_auth(request)
-        print(user_id)
-        favorites = chatRoom.models.Favorite.objects.filter(userNo=user_id)
-        ser = FavoriteSerializer(favorites, many=True)
-
-        return Response({"code":200,"data":ser.data})
-
-    def post(self, request, dno):
-        user_id, user_type = extract_user_info_from_auth(request)
-
-        # 检查用户是否已经收藏
-        existing_favorite = Favorite.objects.filter(userNo=user_id, dno=dno).first()
-        if existing_favorite:
-            # 如果已存在，则删除该收藏
-            existing_favorite.delete()
-            return Response({"code": 200, "message": '收藏已经成功删除'})
-
-        # 如果不存在，则继续处理创建逻辑
-        try:
-            discussion = chatRoom.models.Discussion.objects.get(dno=dno)
-            user = User.objects.get(pk=user_id)
-        except chatRoom.models.Discussion.DoesNotExist:
-            return Response({"code": 404, "message": '讨论不存在'})
-        except User.DoesNotExist:
-            return Response({"code": 404, "message": '用户不存在'})
-
-        # 创建 Favorite 实例
-        favorite = Favorite.objects.create(userNo=user, dno=discussion)
-        serializer = FavoriteSerializer(favorite)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class AIchat(APIView):
     def post(self, request):

@@ -11,9 +11,10 @@ urlpatterns = [
     path('<str:course_id>/discussion/<str:dno>/review',views.showReview.as_view(),name='reviewShow'),
     path('<str:course_id>/discussion/<str:dno>/review/filtered',views.filterReview.as_view(),name='reviewFilter'),
     path('<str:course_id>/discussion/<str:dno>/review/<str:rno>',views.showReview.as_view(),name='reviewDelete'),
-
-
     path('Like/<str:rno>', views.Like.as_view(), name='likeReview'),
+    path('DiscussionLike/<str:dno>',views.DiscussionLikeView.as_view(),name='discussionLike'),
     path('atmessage', views.AtMessageView.as_view(), name='atMessage'),
+    path('all/folder',views.FavoriteFolder.as_view(),name='allFolder'),
+    path('folder/<str:fno>',views.FavoriteFolderDetail.as_view(),name='folderDetail'),
 
 ]
