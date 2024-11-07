@@ -55,7 +55,7 @@
         </ul>
       </div>
       <div v-if="selectedTab === 'ppts'" class="course-ppts">
-        <!-- implement ppts content-->
+        <CoursePPT :courseNo="courseNo" />
       </div>
   
       <div v-if="selectedTab === 'papers'" class="course-papers">
@@ -107,6 +107,7 @@
   
   <script>
 import DiscussionBoard from './DiscussionBoard.vue';
+import CoursePPT from './CoursePPT.vue';
   import { ref } from 'vue'
   import VuePdfEmbed from 'vue-pdf-embed';
   import { marked } from 'marked';
@@ -117,6 +118,7 @@ import DiscussionBoard from './DiscussionBoard.vue';
   export default {
     components: {
       DiscussionBoard,
+      CoursePPT,
       VuePdfEmbed,
     },
     props: {
