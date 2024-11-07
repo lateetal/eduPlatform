@@ -16,6 +16,8 @@
         @show-edit-dialog="showEditDialog"
         @show-upload-dialog="showUploadDialog"
         @show-new-folder-dialog="newFolderDialogVisible = true"
+        @delete-message="deleteMessage"
+        @send-message="sendMessage"
       />
     </div>
     <el-dialog

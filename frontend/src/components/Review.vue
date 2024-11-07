@@ -29,7 +29,7 @@
       <div v-else-if="discussion" class="discussion-item">
         <p class="discussion-content">{{ discussion.dinfo }}</p>
         <div class="discussion-meta">
-          <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerNo }}</span>
+          <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerName }}</span>
           <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
         </div>
 
@@ -54,7 +54,7 @@
         <div v-for="comment in filteredReviews" :key="comment.rno" class="discussion-item">
           <p class="discussion-content">{{ comment.rinfo }}</p>
           <div class="discussion-meta">
-            <span class="author" @click="goToUser(comment.ownerNo)">{{ comment.ownerNo }}</span>
+            <span class="author" @click="goToUser(comment.ownerNo)">{{ comment.username }}</span>
             <span class="post-time">发表于：{{ formatDate(comment.postTime) }}</span>
           </div>
           <p>点赞数：{{ comment.likeNum }}</p>

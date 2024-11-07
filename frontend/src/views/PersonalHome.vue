@@ -58,6 +58,7 @@
                 <span>互动消息</span>
               </template>
             </el-menu-item>
+
           </el-menu>
         </el-aside>
           
@@ -105,9 +106,26 @@
           </div>
 
           <div v-if="selectedTab === 'message'" class="person-message">
-            <h2>互动消息</h2>
-            <p>qzx @你</p>
+             <h2>互动消息</h2>
+            <div v-if="atmessages.length > 0">
+              <el-list>
+                <el-list-item
+                  v-for="(message) in atmessages"
+                  :key="message.id"
+                  :class="{'unread': !message.status}"
+                  @click="viewReview(message)"
+                >
+                  <div>
+                    <span v-if="!message.status" class="message-unread">[未读]</span>
+                    <span v-if="message.status" class="message-read">[已读]</span>
+                    {{ message.rinfo }}
+                  </div>
+                </el-list-item>
+              </el-list>
+            </div>
+
           </div>
+
         </main>
       </div>
     </div>
@@ -124,6 +142,7 @@
   const INFO_URL = 'http://localhost:8000/home/getinfo'
   const UPDATE_URL = 'http://localhost:8000/home/updatePassword'
   const FAVOR_URL = 'http://localhost:8000/homepage/favorite'
+  const ATMESSAGE_URL = 'http://localhost:8000/chatRoom/atmessage'
 
   const instance = axios.create();
   instance.interceptors.request.use(config => {
@@ -157,6 +176,7 @@
     const username = ref('');
     const userType = ref('');
     const selectedTab = ref('info');
+    const atmessages = ref([]);
 
     const fetchUsername = async () => {
       try {
@@ -229,10 +249,23 @@
       router.push('/login');
     };
 
+    const fetchAtmessage = async () => {
+      const response = await instance.get(ATMESSAGE_URL);
+      if(response.status === 200){
+        atmessages.value = response.data.data;
+      } else {
+        this.errorMessage = '请求@信息失败，请稍后再试';
+        console.error(error);
+      }
+    };
+
+
     onMounted(async () => {
       await fetchUsername();
       await fetchInfo();
       await fetchFavorites();
+      await fetchAtmessage();
+
     });
 
     return {
@@ -252,6 +285,8 @@
       username,
       userType,
       selectedTab,
+      atmessages,
+
       logout,
       goHome,
       handleSelect,
@@ -285,7 +320,17 @@
     goToDetail(dno,courseNo) {
       // 跳转到讨论详情页
       this.$router.push({name: 'Review', params: {dno,courseNo}});
-    }
+    },
+
+    //根据@信息跳转到对应帖子详情
+    async viewReview(message){
+      await instance.post(ATMESSAGE_URL,{
+        messageId: message.id
+      });
+      const url = `course/${message.cno}/discussion/${message.dno}`;
+      this.$router.push(url);
+    },
+
   }
 };
   </script>

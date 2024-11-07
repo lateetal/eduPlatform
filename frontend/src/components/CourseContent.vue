@@ -108,13 +108,13 @@
   <script>
 import DiscussionBoard from './DiscussionBoard.vue';
 import CoursePPT from './CoursePPT.vue';
-  import { ref } from 'vue'
-  import VuePdfEmbed from 'vue-pdf-embed';
-  import { marked } from 'marked';
+import { ref } from 'vue'
+import VuePdfEmbed from 'vue-pdf-embed';
+import { marked } from 'marked';
   
   const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
   const AI_URL = 'http://localhost:8000/homepage/aichat';
-  
+
   export default {
     components: {
       DiscussionBoard,
@@ -216,7 +216,7 @@ import CoursePPT from './CoursePPT.vue';
       const convertMarkdown = (content) => {
         return marked(content);
       };
-  
+
       const deleteMessage = (mno) => {
         emit('delete-message', mno);
       };
@@ -226,7 +226,7 @@ import CoursePPT from './CoursePPT.vue';
         title.value = '';
         info.value = '';
       };
-  
+
       return {
         BUCKET_URL,
         chatContainer,

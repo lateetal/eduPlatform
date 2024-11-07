@@ -5,8 +5,8 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 import chatRoom
 from chatRoom import models
-from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion,Like
-from chatRoom.serializers import discussionSerializer, ReviewSerializer
+from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage
+from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer
 from homepage.views import extract_user_info_from_auth
 from login.models import User
 from fuzzywuzzy import fuzz
@@ -267,4 +267,20 @@ class Like(APIView):
             new_like = models.Like.objects.create(userNo=user, rno=review)
             return Response({"code": 200, "message": '点赞成功'})
 
+class AtMessageView(APIView):
+    def get(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        atMessages = atMessage.objects.filter(receiverno_id=user_id)
+        ser = AtMessageSerializer(atMessages, many=True)
 
+        return  Response({"code": 200, "data": ser.data})
+
+    #这里是改变已读状态的接口，新建@在回复和发帖部分
+    def post(self,request):
+        receive_user_id, user_type = extract_user_info_from_auth(request)
+        atMessageId = request.data.get('messageId')
+        message = atMessage.objects.filter(pk=atMessageId).first()
+        message.status = True
+        message.save()
+
+        return Response({"code": 200, "message": '消息已读'})
