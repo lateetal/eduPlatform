@@ -5,12 +5,12 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 import chatRoom
 from chatRoom import models
-from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage
-from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer
+from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion,Like
+from chatRoom.serializers import discussionSerializer, ReviewSerializer
 from homepage.views import extract_user_info_from_auth
 from login.models import User
-import re
-from django.db import transaction
+from fuzzywuzzy import fuzz
+from django.db.models import Q
 
 
 class showDiscussion(APIView):
@@ -38,6 +38,8 @@ class showDiscussion(APIView):
         # 创建讨论
         try:
             havePic = 1 if images else 0
+
+
             new_discussion = Discussion.objects.create(
                 dtitle=title,
                 dinfo=info,
@@ -87,22 +89,55 @@ class showDiscussion(APIView):
         return Response({"code":200,"message":'讨论已经成功编辑'})
 
 
+class filterDiscussion(APIView):
+    def post(self, request, course_id):
+        try:
+            keyword = request.data.get('keyword').strip()
+            if not keyword:
+                return Response({"code": 400, "message": "请输入关键词"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_id, user_type = extract_user_info_from_auth(request)
+
+            # 根据课程ID获取对应的讨论
+            discussions = Discussion.objects.filter(cno_id=course_id)
+
+            # 用来存储匹配的讨论
+            matched_discussions = []
+
+            # 用 fuzzywuzzy 比较每个讨论的标题和正文
+            for discussion in discussions:
+                title_score = fuzz.token_sort_ratio(discussion.dtitle, keyword)
+                info_score = fuzz.token_sort_ratio(discussion.dinfo, keyword)
+
+                # 如果标题或正文和关键词的相似度大于70就认为是匹配的
+                if title_score > 40 or info_score > 40:
+                    matched_discussions.append(discussion)
+
+            # 序列化匹配到的讨论
+            ser = discussionSerializer(matched_discussions, context={'user_id': user_id}, many=True)
+            return Response({"code": 200, "data": ser.data})
+
+        except Discussion.DoesNotExist:
+            return Response({'error': '讨论未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class showReview(APIView):
-    def get(self, request, course_id, dno):
+    def get(self, request,course_id,dno):
         try:
             user_id, user_type = extract_user_info_from_auth(request)
             discussion = Discussion.objects.get(dno=dno)
             reviews = Review.objects.filter(dno_id=dno)
             disSer = discussionSerializer(discussion)
             disData = disSer.data
-            disData['reviews'] = ReviewSerializer(reviews, context={'user_id': user_id}, many=True).data
+            disData['reviews'] = ReviewSerializer(reviews, context={'user_id':user_id},many = True).data
 
-            return Response({"code": 200, "data": disData})
+            return Response({"code":200,"data":disData})
 
         except Discussion.DoesNotExist:
-            return Response({'error': '课程未找到'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error':'课程未找到'},status=status.HTTP_404_NOT_FOUND)
 
-    def post(self, request, course_id, dno):
+    def post(self,request,course_id,dno):
         info = request.data.get('content')
         images = request.data.get('images')
 
@@ -111,10 +146,10 @@ class showReview(APIView):
 
         owner_id, user_type = extract_user_info_from_auth(request)
 
+        # 创建讨论
         try:
             havePic = 1 if images else 0
 
-            # 创建新的回复
             new_review = Review.objects.create(
                 rinfo=info,
                 postTime=timezone.now(),
@@ -124,73 +159,82 @@ class showReview(APIView):
                 dno_id=dno,
                 ownerNo_id=owner_id
             )
-
-            # 处理图片
-            if images:
-                for image in images:
-                    index = image.find("/course")
-                    if index != -1:
-                        cutImage = image[index:]  # 假设 image 是已上传的图片路径
-                    picture = PictureReview.objects.create(
-                        rno=new_review,  # 将新讨论实例关联到图片
-                        pfile=cutImage  # 假设 image 是已上传并保存的图片文件路径
-                    )
-
-            # 解析 @ 用户并创建 atMessage
-            self._process_at_users(info, new_review)
-
             ser = ReviewSerializer(new_review)
             discussion = Discussion.objects.get(dno=dno)
             discussion.updateTime = timezone.now()
             serDiscussion = discussionSerializer(discussion)
+
+            if images:
+                for image in images:
+                    index = image.find("/course")
+                    if index != -1:
+                        cutImage = image[index:]  # 从/cours
+                    picture = PictureReview.objects.create(
+                        rno=new_review,  # 将新讨论实例关联到图片
+                        pfile=cutImage  # 假设 image 是已经上传并保存的图片文件路径
+                    )
 
             return Response({"code": 200, "data": ser.data}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def delete(self, request, course_id, dno, rno):
+    def delete(self,request,course_id,dno,rno):
         try:
             review = Review.objects.get(rno=rno)
-
-            # 删除相关的 atMessage 记录
-            at_messages = atMessage.objects.filter(rno=rno)
-            at_messages.delete()
-
-            # 删除图片
             if review.havePic == 1:
                 PictureReview.objects.filter(rno=rno).delete()
-
             review.delete()
-
             return Response({"code": 200, "message": '回复已经成功删除'})
 
-        except Review.DoesNotExist:
-            return Response({'error': '回复未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Discussion.DoesNotExist:
+            return Response({'error': '讨论未找到'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class filterReview(APIView):
+    def post(self, request, course_id,dno):
+        try:
+            # 获取用户的搜索关键词
+            keyword = request.data.get('keyword', '').strip()
+            if not keyword:
+                return Response({"code": 400, "message": "请输入关键词"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def _process_at_users(self, content, review):
-        print("in _process_at_users")
-        # 使用正则表达式提取 @ 后面的用户名
-        mentioned_users = re.findall(r'@(\w+)', content)
+            # 获取当前用户的信息
+            user_id, user_type = extract_user_info_from_auth(request)
 
-        if mentioned_users:
-            for username in mentioned_users:
-                try:
-                    # 查找提及的用户
-                    receiver = User.objects.get(username=username).id
-                    print(review.ownerNo_id)
+            # 根据dno获取Discussion对象
+            discussion = Discussion.objects.get(dno=dno)
 
-                    # 创建 atMessage 数据
-                    at_message = atMessage.objects.create(
-                        rno_id=review.rno,
-                        senderno_id=review.ownerNo_id,  # 回复者
-                        receiverno_id=receiver,  # 被提及的用户
-                        status=False  # 默认是未读状态
-                    )
-                except User.DoesNotExist:
-                    continue  # 如果用户不存在，则跳过
+            # 根据dno过滤出对应的评论（Review）
+            reviews = Review.objects.filter(dno_id=dno)
+
+            # 用来存储匹配的评论
+            matched_reviews = []
+
+            # 用 fuzzywuzzy 比较每个评论的rinfo和关键词
+            for review in reviews:
+                # 计算 rinfo 与关键词的相似度
+                rinfo_score = fuzz.token_sort_ratio(review.rinfo, keyword)
+
+                # 如果 rinfo 与关键词的相似度大于 40 就认为是匹配的
+                if rinfo_score > 40:
+                    matched_reviews.append(review)
+
+            # 序列化讨论信息
+            disSer = discussionSerializer(discussion)
+            disData = disSer.data
+
+            # 将匹配的评论序列化
+            disData['reviews'] = ReviewSerializer(matched_reviews, context={'user_id': user_id}, many=True).data
+
+            return Response({"code": 200, "data": disData})
+
+        except Discussion.DoesNotExist:
+            return Response({'error': '讨论未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Review.DoesNotExist:
+            return Response({'error': '评论未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class Like(APIView):
     def post(self, request, rno):
@@ -223,20 +267,4 @@ class Like(APIView):
             new_like = models.Like.objects.create(userNo=user, rno=review)
             return Response({"code": 200, "message": '点赞成功'})
 
-class AtMessageView(APIView):
-    def get(self,request):
-        user_id, user_type = extract_user_info_from_auth(request)
-        atMessages = atMessage.objects.filter(receiverno_id=user_id)
-        ser = AtMessageSerializer(atMessages, many=True)
 
-        return  Response({"code": 200, "data": ser.data})
-
-    #这里是改变已读状态的接口，新建@在回复和发帖部分
-    def post(self,request):
-        receive_user_id, user_type = extract_user_info_from_auth(request)
-        atMessageId = request.data.get('atMessageId')
-        message = atMessage.objects.filter(pk=atMessageId).first()
-        message.status = True
-        message.save()
-
-        return Response({"code": 200, "message": '消息已读'})

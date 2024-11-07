@@ -90,7 +90,7 @@ import CourseSidebar from '@/components/CourseSidebar.vue';
 import CourseContent from '@/components/CourseContent.vue';
 import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 
 // optional styles
@@ -120,7 +120,6 @@ export default {
 
   setup() {
     const route = useRoute();
-    const router = useRouter();
     const courseNo = route.params.courseNo;
     const courseData = ref(null);
     const selectedTab = ref('introduction');
@@ -168,9 +167,6 @@ export default {
 
     const handleSelect = (key) => {
       selectedTab.value = key;
-      if(selectedTab.value === 'discussion'){
-        router.push(`/course/${courseNo}/discussion/`);
-      }
     };
 
     const showUploadDialog = () => {

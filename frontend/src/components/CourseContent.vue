@@ -55,7 +55,7 @@
         </ul>
       </div>
       <div v-if="selectedTab === 'ppts'" class="course-ppts">
-        <!-- implement ppts content-->
+        <CoursePPT :courseNo="courseNo" />
       </div>
   
       <div v-if="selectedTab === 'papers'" class="course-papers">
@@ -68,7 +68,11 @@
       <div v-if="selectedTab === 'homework'" class="course-homework">
         <!-- Implement homework content -->
       </div>
-  
+      
+      <div v-if="selectedTab === 'discussion'" class="course-discussion">
+        <DiscussionBoard :courseNo="courseNo" />
+      </div>
+
       <div v-if="selectedTab === 'AIhelper'" class="course-AIhelper">
         <div id="chat-container">
           <div v-for="(msg, index) in chatHistory" :key="index" :class="msg.role">
@@ -102,6 +106,8 @@
   </template>
   
   <script>
+import DiscussionBoard from './DiscussionBoard.vue';
+import CoursePPT from './CoursePPT.vue';
   import { ref } from 'vue'
   import VuePdfEmbed from 'vue-pdf-embed';
   import { marked } from 'marked';
@@ -111,6 +117,8 @@
   
   export default {
     components: {
+      DiscussionBoard,
+      CoursePPT,
       VuePdfEmbed,
     },
     props: {
@@ -157,6 +165,7 @@
           case 'papers': return '历年试题库';
           case 'exercises': return '习题库';
           case 'homework': return '作业';
+          case 'discussion': return '讨论区';
           case 'AIhelper': return 'AI问答';
           case 'notice': return '通知';
           case 'student': return '选课学生';
@@ -416,4 +425,8 @@
   .course-notice form button:hover {
     background-color: #45a049;
   }
+
+  .course-discussion {
+  width: 100%;
+}
   </style>
