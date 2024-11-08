@@ -19,11 +19,10 @@
           </div>
           <div class="input-group">
             <el-icon class="input-icon"><Key /></el-icon>
-            <input type="text" v-model="captcha" placeholder="请输入验证码" required />
-            <span class="captcha">4997</span>
+            <input type="text" v-model="captchaInput" placeholder="请输入验证码" required />
+            <span class="captcha" @click="generateCaptcha">{{ captcha }}</span>
           </div>
           <button type="submit" class="login-btn">登录</button>
-          <!-- <a href="#" class="forgot-password">忘记密码?</a> -->
         </form>
       </div>
     </div>
@@ -45,32 +44,63 @@
         password: '',
         message: '',
         captcha: '',
+        captchaInput: "",  // 用户输入的验证码
+        captchaError: false,  // 验证错误信息标志
       }
     },
+    created() {
+      // 在组件加载时生成一个初始的验证码
+      this.generateCaptcha();
+    },
     methods: {
-      async handleSubmit() {
-        try {
-          const response = await axios.post('http://localhost:8000/login/api/token/', {
-            username: this.username,
-            password: this.password
-          })
-  
-          const token = response.data.access
-          localStorage.setItem('token', token)
-  
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-
-          const userType = response.data.userType
-          if (userType === 'student') {
-            this.$router.push('/student')
-          } else if (userType === 'teacher') {
-            this.$router.push('/teacher')
-          }
-        } catch (error) {
-          ElMessage.error('用户名或密码不正确')
-
+      generateCaptcha() {
+        this.captcha = this.generateRandomCaptcha();
+        this.captchaError = false;  // 每次刷新验证码时，清除错误提示
+        this.captchaInput = '';  // 清空输入框
+      },
+      // 生成一个4位随机验证码（可以包含数字和字母）
+      generateRandomCaptcha() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let captcha = '';
+        for (let i = 0; i < 4; i++) {
+          const randomIndex = Math.floor(Math.random() * characters.length);
+          captcha += characters[randomIndex];
         }
-      }
+        return captcha;
+      },
+
+      async handleSubmit() {
+        if (this.captchaInput === this.captcha) {
+          this.captchaError = false;
+        } else {
+          this.captchaError = true;
+          ElMessage.error('验证码不正确')
+        }
+        if(this.captchaError === false){
+          try {
+            const response = await axios.post('http://localhost:8000/login/api/token/', {
+              username: this.username,
+              password: this.password
+            })
+    
+            const token = response.data.access
+            localStorage.setItem('token', token)
+    
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+            const userType = response.data.userType
+            if (userType === 'student') {
+              this.$router.push('/student')
+            } else if (userType === 'teacher') {
+              this.$router.push('/teacher')
+            }
+          } catch (error) {
+            ElMessage.error('用户名或密码不正确')
+
+          }
+        }
+      },
+
     }
   }
 </script>

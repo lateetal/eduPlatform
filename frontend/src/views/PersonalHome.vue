@@ -35,7 +35,7 @@
               </template>
             </el-menu-item>
 
-            <el-menu-item index="3" @click="selectedTab = 'favorite'">
+            <el-menu-item index="3" @click="selectedTab = 'folder'">
               <template #title>
                 <span>收藏夹</span>
               </template>
@@ -103,19 +103,51 @@
             <p v-if="successMessage" style="color: green;">{{ successMessage }}</p>
           </div>
 
-          <div v-if="selectedTab === 'favorite'" class="person-favorite">
+          <div v-if="selectedTab === 'folder'" class="person-folder">
             <h2>收藏夹</h2>
-            <p>待开发</p>
+            <div class="folder-list">
+              <ul>
+                <li v-for="folder in folders" :key="folder.fno">
+                  <div class="folder-item">
+                    <h3>{{ folder.fname }}</h3>
+                    <div class="folder-btn">
+                      <el-switch
+                        v-model="folder.fstatus"
+                        active-text="公开"
+                        disabled
+                      />
+                      <el-button type="primary">
+                        <el-icon><Edit /></el-icon>
+                      </el-button>
+                    </div>
+                    
+                  </div>
+                  
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div v-if="selectedTab === 'follow'" class="person-follow">
             <h2>关注列表</h2>
-            <p>待开发</p>
+            <div class="follow-list">
+              <ul>
+                <li v-for="follow in follows" :key="follow.username">
+                  <h3 @click="goToUser(follow.username)">{{ follow.username }}</h3>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div v-if="selectedTab === 'fans'" class="person-fans">
             <h2>粉丝列表</h2>
-            <p>待开发</p>
+            <div class="fan-list">
+              <ul>
+                <li v-for="fan in fans" :key="fan.username">
+                  <h3 @click="goToUser(fan.username)">{{ fan.username }}</h3>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div v-if="selectedTab === 'message'" class="person-message">
@@ -147,7 +179,7 @@
   <script>
   import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
-  import { School, TopRight } from '@element-plus/icons-vue';
+  import { School, TopRight, Edit  } from '@element-plus/icons-vue';
   import axios from 'axios'
   import {ElMessage} from "element-plus";
 
@@ -169,7 +201,7 @@
 
 
   export default {
-  components: { School, TopRight },
+  components: { School, TopRight, Edit },
   setup() {
     const form = ref({
       id: '',
@@ -190,6 +222,37 @@
     const userType = ref('');
     const selectedTab = ref('info');
     const atmessages = ref([]);
+
+    const follows = ref([
+      {
+        username:'22301001',
+      },
+      {
+        username:'22301018',
+      },
+    ]);
+
+    const fans = ref([
+      {
+        username:'22301001',
+      },
+      {
+        username:'22301082',
+      },
+    ]);
+
+    const folders = ref([
+      {
+        fno:1,
+        fname:'实训',
+        fstatus:true,
+      },
+      {
+        fno:2,
+        fname:'笔记',
+        fstatus:false,
+      },
+    ])
 
     const fetchUsername = async () => {
       try {
@@ -249,6 +312,10 @@
       router.push('/login');
     };
 
+    const goToUser = (username) => {
+      router.push(`/user/${username}`);
+    }
+
     const fetchAtmessage = async () => {
       const response = await instance.get(ATMESSAGE_URL);
       if(response.status === 200){
@@ -279,9 +346,13 @@
       userType,
       selectedTab,
       atmessages,
+      follows,
+      fans,
+      folders,
 
       logout,
       goHome,
+      goToUser,
       handleSelect,
     };
   },
@@ -329,6 +400,18 @@
   </script>
   
   <style scoped>
+  .follow-list h3:hover {
+    color: #4769ff; 
+    font-weight: bold; 
+    cursor: pointer;  
+  }
+
+  .fan-list h3:hover {
+    color: #4769ff; 
+    font-weight: bold; 
+    cursor: pointer;  
+  }
+
   .smart-course-platform {
     font-family: Arial, sans-serif;
     color: #333;
@@ -404,4 +487,15 @@
     padding: 20px;
   }
   
+  .folder-item {
+    display: flex; 
+    align-items: center; 
+    gap: 60%; /* 控制 p 和 el-switch 之间的间距 */
+  }
+
+  .folder-btn {
+    display: flex; 
+    align-items: center; 
+    gap: 10px; /* 控制 p 和 el-switch 之间的间距 */
+  }
   </style>
