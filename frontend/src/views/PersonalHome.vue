@@ -65,13 +65,32 @@
         <main class="main-content">
           <div v-if="selectedTab === 'info'" class="person-info">
             <h2>个人信息</h2>
-            <p v-if="userType === 'student'">学号：{{ id }}</p>
-            <p v-else>工号：{{ id }}</p>
-            <p>姓名：{{ name }}</p>
-            <p>邮箱：{{ mail }}</p>
-            <p v-if="userType === 'teacher'">办公室：{{ office }}</p>
-            <p v-if="userType === 'teacher'">电话：{{ phone }}</p>
-            <p v-if="userType === 'teacher'">简介：{{ intro }}</p>
+            <el-form :model="form" label-width="auto">
+              <el-form-item v-if="userType==='teacher'" label="工号">
+                <el-input v-model="form.id" disabled/>
+              </el-form-item>
+              <el-form-item v-if="userType==='student'" label="学号">
+                <el-input v-model="form.id" disabled/>
+              </el-form-item>
+              <el-form-item label="姓名">
+                <el-input v-model="form.name" disabled/>
+              </el-form-item>
+              <el-form-item label="邮箱">
+                <el-input v-model="form.mail"/>
+              </el-form-item>
+              <el-form-item v-if="userType === 'teacher'" label="办公室">
+                <el-input v-model="form.office"/>
+              </el-form-item>
+              <el-form-item v-if="userType === 'teacher'" label="电话">
+                <el-input v-model="form.phone"/>
+              </el-form-item>
+              <el-form-item v-if="userType === 'teacher'" label="简介">
+                <el-input v-model="form.intro"/>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="onSubmit">提交修改</el-button>
+              </el-form-item>
+            </el-form>
           </div>
           
           <div v-if="selectedTab === 'psw'" class="person-psw">
@@ -86,23 +105,17 @@
 
           <div v-if="selectedTab === 'favorite'" class="person-favorite">
             <h2>收藏夹</h2>
-            <div v-if="favorites.length === 0">没有收藏的帖子。</div>
-            <div v-else>
-              <div v-for="favorite in favorites" :key="favorite.id" class="favorite-item" @click="goToDetail(favorite.dno,favorite.dis_detail.cno)">
-                <h3>{{ favorite.dis_detail.dtitle }}</h3>
-                <p>{{ favorite.dis_detail.dinfo }}</p>
-                </div>
-            </div>
+            <p>待开发</p>
           </div>
 
           <div v-if="selectedTab === 'follow'" class="person-follow">
             <h2>关注列表</h2>
-            <p>22301018</p>
+            <p>待开发</p>
           </div>
 
           <div v-if="selectedTab === 'fans'" class="person-fans">
             <h2>粉丝列表</h2>
-            <p>22301082</p>
+            <p>待开发</p>
           </div>
 
           <div v-if="selectedTab === 'message'" class="person-message">
@@ -141,7 +154,6 @@
   const USERNAME_URL = 'http://localhost:8000/homepage/getusername/'
   const INFO_URL = 'http://localhost:8000/home/getinfo'
   const UPDATE_URL = 'http://localhost:8000/home/updatePassword'
-  const FAVOR_URL = 'http://localhost:8000/homepage/favorite'
   const ATMESSAGE_URL = 'http://localhost:8000/chatRoom/atmessage'
 
   const instance = axios.create();
@@ -159,20 +171,21 @@
   export default {
   components: { School, TopRight },
   setup() {
+    const form = ref({
+      id: '',
+      name: '',
+      mail: '',
+      office: '',
+      phone: '',
+      intro: '',
+    });
     const router = useRouter();
-    const favorites = ref([]); // 收藏夹的帖子列表
     const oldPassword = ref('');
     const newPassword = ref('');
     const confirmPassword = ref('');
     const errorMessage = ref('');
     const successMessage = ref('');
     const error = ref('');
-    const id = ref('');
-    const name = ref('');
-    const mail = ref('');
-    const office = ref('');
-    const phone = ref('');
-    const intro = ref('');
     const username = ref('');
     const userType = ref('');
     const selectedTab = ref('info');
@@ -199,35 +212,22 @@
         if (response.status === 200) {
           const data = response.data.data;
           if (userType.value === 'teacher') {
-            id.value = data.tno;
-            name.value = data.tname;
-            mail.value = data.tmail;
-            office.value = data.toffice;
-            phone.value = data.tphone;
-            intro.value = data.tintro;
+            form.value.id = data.tno;
+            form.value.name = data.tname;
+            form.value.mail = data.tmail;
+            form.value.office = data.toffice;
+            form.value.phone = data.tphone;
+            form.value.intro= data.tintro;
           } else {
-            id.value = data.sno;
-            name.value = data.sname;
-            mail.value = data.smail;
+            form.value.id = data.sno;
+            form.value.name = data.sname;
+            form.value.mail = data.smail;
           }
         } else {
           console.error('Failed to fetch data:', response.status);
         }
       } catch (error) {
         console.error('Error fetching info:', error);
-      }
-    };
-
-    const fetchFavorites = async () => {
-      try {
-        const response = await instance.get(FAVOR_URL);
-        const result = await response.data;
-        if (result.code === 200) {
-          favorites.value = result.data;
-          console.log(favorites)
-        }
-      } catch (error) {
-        console.error('获取收藏夹数据失败:', error);
       }
     };
 
@@ -263,25 +263,18 @@
     onMounted(async () => {
       await fetchUsername();
       await fetchInfo();
-      await fetchFavorites();
       await fetchAtmessage();
 
     });
 
     return {
-      favorites,
+      form,
       oldPassword,
       newPassword,
       confirmPassword,
       errorMessage,
       successMessage,
       error,
-      id,
-      name,
-      mail,
-      office,
-      phone,
-      intro,
       username,
       userType,
       selectedTab,

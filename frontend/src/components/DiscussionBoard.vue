@@ -25,10 +25,10 @@
       <!-- 显示讨论列表 -->
       <div v-else class="discussion-list">
         <div v-for="discussion in paginatedDiscussions" :key="discussion.dno" class="discussion-item">
+          <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerName }}</span>
           <h3 @click="goToDiscussionDetail(discussion.dno)" class="discussion-title">{{ discussion.dtitle }}</h3>
           <p @click="goToDiscussionDetail(discussion.dno)" class="discussion-content">{{ discussion.dinfo }}</p>
           <div class="discussion-meta">
-            <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerName }}</span>
             <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
             <span class="like_num">点赞数：{{ discussion.like }}</span>
           </div>
@@ -127,8 +127,6 @@ import axios from 'axios';
 import OSS from 'ali-oss';
 
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
-const API_URL = 'http://localhost:8000/chatRoom/';
-
 
 // 创建 Axios 实例
 const instance = axios.create();
@@ -359,6 +357,19 @@ export default {
       }
     };
 
+    const likeDiscussion = async (discussion) => {
+      const API_URL = `http://localhost:8000/chatRoom/DiscussionLike/${discussion.dno}`
+      try {
+        const response = await instance.post(API_URL);
+        if (response.status === 200) {
+          alert(discussion.is_liked ? '取消点赞成功' : '点赞成功');
+          await fetchDiscussions();
+        }
+      } catch (err) {
+        console.error('请求失败', err);
+      }
+    };
+
     const paginatedDiscussions = computed(() => {
       const start = (currentPage.value - 1) * itemsPerPage;
       const end = start + itemsPerPage;
@@ -411,24 +422,11 @@ export default {
       cancelEdit,
       goToDiscussionDetail,
       postFavorite,
+      likeDiscussion,
       prevPage,
       nextPage,
       goToUser,
     };
-  },
-  methods: {
-    async likeDiscussion(discussion) {
-      try {
-        const response = await instance.post(`${API_URL}DiscussionLike/${discussion.dno}`);
-        if (response.status === 200) {
-          alert(discussion.is_liked ? '取消点赞成功' : '点赞成功');
-          await this.fetchDiscussionDetail();
-        }
-      } catch (err) {
-        this.error = `操作失败: ${err.message}`;
-      }
-    },
-
   }
 
 };
