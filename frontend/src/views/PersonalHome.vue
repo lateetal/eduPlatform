@@ -490,7 +490,7 @@
   .folder-item {
     display: flex; 
     align-items: center; 
-    gap: 60%; /* 控制 p 和 el-switch 之间的间距 */
+    gap: 200px; /* 控制 p 和 el-switch 之间的间距 */
   }
 
   .folder-btn {
