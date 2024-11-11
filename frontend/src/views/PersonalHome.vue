@@ -88,7 +88,7 @@
                 <el-input v-model="form.intro"/>
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="onSubmit">提交修改</el-button>
+                <el-button type="primary" @click="onSubmit()">提交修改</el-button>
               </el-form-item>
             </el-form>
           </div>
@@ -238,7 +238,7 @@
   import {ElMessage} from "element-plus";
 
   const USERNAME_URL = 'http://localhost:8000/homepage/getusername/'
-  const INFO_URL = 'http://localhost:8000/home/getinfo'
+  const INFO_URL = 'http://localhost:8000/home/getinfo/0'
   const UPDATE_URL = 'http://localhost:8000/home/updatePassword'
   const ATMESSAGE_URL = 'http://localhost:8000/chatRoom/atmessage'
 
@@ -377,7 +377,7 @@
 
     const deleteFolderDialog = (folder) => {
       deleteFolderDialogVisible.value = true;
-
+      console.log('delete',folder.fname)
     }
 
     const createFolderDialog = () => {
@@ -421,8 +421,8 @@
       }
     }
 
-    // const deleteFolder = async () => {
-
+    // const deleteFolder = async (folder) => {
+    //   console.log('delete',folder.fname);
     // }
 
     const goHome = () => {
@@ -469,8 +469,36 @@
       }catch(err){
         console.error(err);
       }
-    }
+    };
 
+    const onSubmit = async () => {
+
+      if (userType.value === 'teacher') {
+        try{
+          const response = await instance.put('http://localhost:8000/home/modifyInfo',
+            {mail:form.value.mail,
+                  office:form.value.office,
+                  phone:form.value.phone,
+                  intro:form.value.intro,});
+          if(response.status === 200){
+            alert('修改成功');
+          }
+        }catch(err){
+          console.error(err);
+        }
+
+      } else if (userType.value === 'student') {
+        try {
+          const response = await instance.put('http://localhost:8000/home/modifyInfo',
+              {mail: form.value.mail});
+          if (response.status === 200) {
+            alert('修改成功');
+          }
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    }
 
     onMounted(async () => {
       await fetchUsername();
@@ -510,6 +538,7 @@
       createFolderDialog,
       handleFolderSubmit,
       deleteFolderDialog,
+      onSubmit,
     };
   },
   methods: {

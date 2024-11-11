@@ -2,6 +2,7 @@ from tabnanny import check
 
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.hashers import check_password
+from django.db.migrations import serializer
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,9 +16,13 @@ from login.models import User
 # Create your views here.
 
 class HomeView(APIView):
-    def get(self, request):
-        user_id, user_type = extract_user_info_from_auth(request)
-        username = User.objects.get(id=user_id).username
+    def get(self, request,userNo):
+        if userNo == '0':
+            user_id, user_type = extract_user_info_from_auth(request)
+            username = User.objects.get(id=user_id).username
+        else:
+            username = User.objects.get(id=userNo).username
+            user_type = User.objects.get(id=userNo).user_type
 
         if user_type == 'student':
             student = Student.objects.get(pk=username)
@@ -27,6 +32,50 @@ class HomeView(APIView):
             ser = TeacherSerializer(teacher)
         return Response({"code":200,"data":ser.data})
 
+class modifyInformation(APIView):
+    def put(self, request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        username = User.objects.get(id=user_id).username  # 获取用户名
+
+
+        # 根据用户类型选择是处理学生还是教师
+        if user_type == 'student':
+            # 获取学生对象
+            student = Student.objects.get(pk=username)
+            new_Smail = request.data.get('mail')
+            student.smail = new_Smail
+            student.save()
+            # 将请求的数据传递给学生序列化器进行更新
+            ser = StudentSerializer(student)  # partial=True 允许部分更新
+            return Response({"code": 200, "data": ser.data})
+
+        elif user_type == 'teacher':
+            # 获取教师对象
+            teacher = Teacher.objects.get(pk=username)
+
+            new_Tmail = request.data.get('mail')
+            new_Toffice = request.data.get('office')
+            new_Tphone = request.data.get('phone')
+            new_Tintro = request.data.get('intro')
+
+            teacher.tmail = new_Tmail
+            teacher.toffice = new_Toffice
+            teacher.tphone = new_Tphone
+            teacher.tintro = new_Tintro
+
+            teacher.save()
+            ser = TeacherSerializer(teacher)  # partial=True 允许部分更新
+            return Response({"code":200,"data":ser.data})
+
+        # 验证数据是否有效
+        if serializer.is_valid():
+            # 保存更新后的数据
+            serializer.save()
+            # 返回更新后的数据
+            return Response({"code": 200, "data": serializer.data})
+        else:
+            # 如果验证失败，返回错误信息
+            return Response(serializer.errors)
 
 class Password(APIView):
     def post(self, request):
