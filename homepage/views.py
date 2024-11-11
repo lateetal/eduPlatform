@@ -222,7 +222,7 @@ class AllCourseMessage(APIView):
     def get(self, request):
         user_id, user_type = extract_user_info_from_auth(request)
         username = User.objects.get(pk=user_id).username
-
+        # 展示老师教授课程的通知
         if user_type == 'teacher':
             messages = CourseMessage.objects.filter(msend_id=username)
             ser = CourseMessageSerializer(messages, many=True)

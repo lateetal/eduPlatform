@@ -104,27 +104,41 @@
           </div>
 
           <div v-if="selectedTab === 'folder'" class="person-folder">
-            <h2>收藏夹</h2>
+            <div class="folder-header">
+              <h2>收藏夹</h2>
+              <el-button type="primary" @click="createFolderDialog()">
+                创建收藏夹
+              </el-button>
+            </div>
+            
             <div class="folder-list">
-              <ul>
-                <li v-for="folder in folders" :key="folder.fno">
-                  <div class="folder-item">
-                    <h3>{{ folder.fname }}</h3>
-                    <div class="folder-btn">
-                      <el-switch
-                        v-model="folder.fstatus"
-                        active-text="公开"
-                        disabled
-                      />
-                      <el-button type="primary">
-                        <el-icon><Edit /></el-icon>
-                      </el-button>
-                    </div>
-                    
+              <el-collapse>
+                <el-collapse-item v-for="folder in folders" :key="folder.fno">
+                    <template #title>
+                      <span class="folder-name">{{folder.fname}}</span>
+                      <div class="folder-btn">
+                        <el-switch
+                          v-model="folder.fstatus"
+                          active-text="公开"
+                          disabled
+                        />
+                        <el-button type="primary" @click="editFolderDialog(folder)">
+                          <el-icon><Edit /></el-icon>
+                        </el-button>
+                        <el-button type="primary" @click="deleteFolderDialog(folder)">
+                          <el-icon><Delete /></el-icon>
+                        </el-button>
+                      </div>
+                    </template>
+                  <div>
+                    <ul>
+                      <li v-for="discussion in folderDiscussions" :key="discussion.dno" class="discussion-list">
+                        <p @click="goToDiscussion(discussion)">{{discussion.dtitle}}</p>
+                      </li>  
+                    </ul>
                   </div>
-                  
-                </li>
-              </ul>
+                </el-collapse-item>
+              </el-collapse>
             </div>
           </div>
 
@@ -168,18 +182,58 @@
                 </el-list-item>
               </el-list>
             </div>
-
           </div>
-
         </main>
       </div>
+      <el-dialog
+        :title="folderDialogTitle"
+        v-model="folderDialogVisible"
+        width="50%"
+      >
+        <el-form :model="folderForm">
+          <el-form-item label="名称">
+            <el-input
+              type="textarea"
+              v-model="folderForm.fname"
+              :rows="1"
+            ></el-input>
+          </el-form-item>
+          <el-form-item label="公开">
+            <el-switch
+              v-model="folderForm.fstatus"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="folderDialogVisible = false;clearFolderDialog()">取消</el-button>
+            <el-button type="primary" @click="folderDialogVisible = false;handleFolderSubmit()">提交</el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <el-dialog
+        v-model="deleteFolderDialogVisible"
+        title="提示"
+        width="50%"
+      >
+        <span>确定删除收藏夹吗？</span>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="deleteFolderDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="deleteFolderDialogVisible = false">
+              确定
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
     </div>
   </template>
   
   <script>
   import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
-  import { School, TopRight, Edit  } from '@element-plus/icons-vue';
+  import { School, TopRight, Edit, Delete  } from '@element-plus/icons-vue';
   import axios from 'axios'
   import {ElMessage} from "element-plus";
 
@@ -201,7 +255,7 @@
 
 
   export default {
-  components: { School, TopRight, Edit },
+  components: { School, TopRight, Edit, Delete },
   setup() {
     const form = ref({
       id: '',
@@ -222,6 +276,15 @@
     const userType = ref('');
     const selectedTab = ref('info');
     const atmessages = ref([]);
+    const folderDialogVisible = ref(false);
+    const folderDialogTitle = ref('');
+    const deleteFolderDialogVisible = ref(false);
+
+    const folderForm = ref({
+      fno:0,
+      fname:'',
+      fstatus: true,
+    })
 
     const follows = ref([
       {
@@ -241,18 +304,19 @@
       },
     ]);
 
-    const folders = ref([
-      {
-        fno:1,
-        fname:'实训',
-        fstatus:true,
-      },
-      {
-        fno:2,
-        fname:'笔记',
-        fstatus:false,
-      },
-    ])
+    const folders = ref([]);
+    const folderDiscussions = ref([
+    {
+      courseNo:'1',
+      dno:'1',
+      dtitle:'点赞写好了吗',
+    },
+    {
+      courseNo:'2',
+      dno:'3',
+      dtitle:'随机森林'
+    },
+    ]);
 
     const fetchUsername = async () => {
       try {
@@ -298,6 +362,69 @@
       selectedTab.value = key;
     };
 
+    const clearFolderDialog = () => {
+      folderForm.value.fname = '';
+      folderForm.value.fname = true;
+    }
+
+    const editFolderDialog = (folder) => {
+      folderDialogTitle.value = '编辑收藏夹';
+      folderDialogVisible.value = true;
+      folderForm.value.fno = folder.fno;
+      folderForm.value.fname = folder.fname;
+      folderForm.value.fstatus = folder.fstatus;
+    }
+
+    const deleteFolderDialog = (folder) => {
+      deleteFolderDialogVisible.value = true;
+
+    }
+
+    const createFolderDialog = () => {
+      folderDialogTitle.value = '创建收藏夹';
+      folderDialogVisible.value = true;
+      folderForm.value.fname = '';
+      folderForm.value.fstatus = true;
+    }
+
+    const handleFolderSubmit = () => {
+      if(folderDialogTitle.value === '创建收藏夹'){
+        createFolder();
+      }else if(folderDialogTitle.value === '编辑收藏夹'){
+        editFolder();
+      }
+    }
+
+    const createFolder = async () => {
+      try {
+        const response = await instance.post('http://localhost:8000/chatRoom/all/folder',
+        {fstatus:folderForm.value.fstatus, fname:folderForm.value.fname,});
+        if (response.status === 200) {
+          alert('创建收藏夹成功');
+          await fetchFolder();
+        }
+      } catch (err) {
+        console.error('请求失败', err);
+      }
+    }
+
+    const editFolder = async () => {
+      try {
+        const response = await instance.put('http://localhost:8000/chatRoom/all/folder',
+        {fstatus:folderForm.value.fstatus, fname:folderForm.value.fname,fno:folderForm.value.fno,});
+        if (response.status === 200) {
+          alert('修改收藏夹成功');
+          await fetchFolder();
+        }
+      } catch (err) {
+        console.error('请求失败', err);
+      }
+    }
+
+    // const deleteFolder = async () => {
+
+    // }
+
     const goHome = () => {
       if(userType.value === 'student'){
         router.push('/student');
@@ -316,6 +443,10 @@
       router.push(`/user/${username}`);
     }
 
+    const goToDiscussion = (discussion) => {
+      router.push(`/course/${discussion.courseNo}/discussion/${discussion.dno}`)
+    }
+
     const fetchAtmessage = async () => {
       const response = await instance.get(ATMESSAGE_URL);
       if(response.status === 200){
@@ -326,12 +457,26 @@
       }
     };
 
+    const fetchFolder = async () => {
+      try{
+        const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
+        if(response.status === 200){
+          folders.value = response.data.data;
+        }else{
+          this.errorMessage = '请求收藏夹信息失败';
+          console.error(error);
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }
+
 
     onMounted(async () => {
       await fetchUsername();
       await fetchInfo();
       await fetchAtmessage();
-
+      await fetchFolder();
     });
 
     return {
@@ -349,11 +494,22 @@
       follows,
       fans,
       folders,
+      folderDiscussions,
+      folderDialogVisible,
+      deleteFolderDialogVisible,
+      folderForm,
+      folderDialogTitle,
 
       logout,
       goHome,
       goToUser,
+      goToDiscussion,
       handleSelect,
+      clearFolderDialog,
+      editFolderDialog,
+      createFolderDialog,
+      handleFolderSubmit,
+      deleteFolderDialog,
     };
   },
   methods: {
@@ -486,16 +642,25 @@
     flex-grow: 1;
     padding: 20px;
   }
-  
-  .folder-item {
-    display: flex; 
-    align-items: center; 
-    gap: 200px; /* 控制 p 和 el-switch 之间的间距 */
-  }
 
-  .folder-btn {
-    display: flex; 
-    align-items: center; 
-    gap: 10px; /* 控制 p 和 el-switch 之间的间距 */
+  .folder-header {
+  display: flex; 
+  justify-content: space-between; 
+}
+  
+  .folder-name {
+  font-size: 18px; 
+    margin-right: 60%; 
+}
+
+.folder-btn {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+}
+  .discussion-list p:hover {
+    color: #4769ff; 
+    font-weight: bold; 
+    cursor: pointer;
   }
   </style>
