@@ -16,5 +16,5 @@ urlpatterns = [
     path('atmessage', views.AtMessageView.as_view(), name='atMessage'),
     path('all/folder',views.FavoriteFolder.as_view(),name='allFolder'),
     path('folder/<str:fno>',views.FavoriteFolderDetail.as_view(),name='folderDetail'),
-
+    path('<str:course_id>/showtopic',views.showTopic.as_view(),name='showTopic'),
 ]

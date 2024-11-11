@@ -51,6 +51,11 @@ class Favorite(models.Model):
     fno = models.ForeignKey('FavoritesFolder', on_delete=models.CASCADE)
     dno = models.ForeignKey('Discussion', on_delete=models.CASCADE)
 
+#收藏他人的收藏夹
+class FavoritesFolderOfOthers(models.Model):
+    fno = models.ForeignKey('FavoritesFolder', on_delete=models.CASCADE)
+    collector = models.ForeignKey('login.User', on_delete=models.CASCADE)
+
 #@他人的信息
 class atMessage(models.Model):
     rno = models.ForeignKey('Review', on_delete=models.CASCADE)#属于哪条回复
@@ -58,5 +63,15 @@ class atMessage(models.Model):
     receiverno = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     sendTime = models.DateTimeField(auto_now_add=True)
     status = models.BooleanField(default=False)
+
+#话题
+class Topic(models.Model):
+    tno = models.AutoField(primary_key=True)
+    tname = models.CharField(max_length=50)
+
+#带话题的讨论
+class DiscussionWithTopic(models.Model):
+    tno = models.ForeignKey('Topic', on_delete=models.CASCADE)
+    dno = models.ForeignKey('Discussion', on_delete=models.CASCADE)
 
 

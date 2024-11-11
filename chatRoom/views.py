@@ -5,13 +5,15 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 import chatRoom
 from chatRoom import models
-from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage, FavoritesFolder,Favorite
+from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage, FavoritesFolder, \
+    Favorite, Topic, DiscussionWithTopic
 from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer, FloderSerializer, \
     FloderDetailSerializer
+from homepage.models import Course
 from homepage.views import extract_user_info_from_auth
 from login.models import User
 from fuzzywuzzy import fuzz
-from django.db.models import Q
+import re
 
 
 class showDiscussion(APIView):
@@ -61,6 +63,13 @@ class showDiscussion(APIView):
                         pfile=cutImage  # 假设 image 是已经上传并保存的图片文件路径
                     )
 
+            combined_text = title + ' ' + info
+            topics = re.findall(r'#(\w+)', combined_text)  # 提取所有 @后跟的用户名
+
+            for topic_name in topics:
+                topic, created = Topic.objects.get_or_create(tname=topic_name)
+                DiscussionWithTopic.objects.create(dno_id=new_discussion.dno, tno_id=topic.tno)
+
             return Response({"code": 200, "data": ser.data}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
@@ -72,7 +81,7 @@ class showDiscussion(APIView):
             discussion = Discussion.objects.get(dno=dno)
             if discussion.havePic == 1:
                 PictureDisscussion.objects.filter(dno=dno).delete()
-
+            DiscussionWithTopic.objects.filter(dno_id=dno).delete()
             discussion.delete()
             return Response({"code":200,"message":'讨论已经成功删除'})
 
@@ -175,6 +184,27 @@ class showReview(APIView):
                         pfile=cutImage  # 假设 image 是已经上传并保存的图片文件路径
                     )
 
+                    # 解析 @用户名
+            mentions = re.findall(r'@(\w+)', info)  # 提取所有 @后跟的用户名
+            mentioned_users = []
+
+            for username in mentions:
+                try:
+                    userid = User.objects.get(username=username).id
+                    mentioned_users.append(userid)
+                except User.DoesNotExist:
+                    continue  # 如果找不到用户，就跳过
+
+            # 创建 @消息记录
+            for mentioned_user in mentioned_users:
+                at_message = atMessage.objects.create(
+                    rno=new_review,
+                    senderno_id=owner_id,
+                    receiverno_id=mentioned_user,
+                    sendTime=timezone.now(),
+                    status=False  # 初始状态为未读
+                )
+
             return Response({"code": 200, "data": ser.data}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
@@ -186,6 +216,8 @@ class showReview(APIView):
             if review.havePic == 1:
                 PictureReview.objects.filter(rno=rno).delete()
             review.delete()
+
+            atMessage.objects.filter(rno=rno).delete()
             return Response({"code": 200, "message": '回复已经成功删除'})
 
         except Discussion.DoesNotExist:
@@ -388,6 +420,23 @@ class FavoriteFolderDetail(APIView):
 
         return Response({"code": 200, "message": "帖子收藏移动成功"})
 
+class showTopic(APIView):
+    def get(self, request, course_id):
+        topic_name = request.data.get('topic')  # 获取请求中的话题
+        try:
+            course = Course.objects.get(cno=course_id)  # 假设你有 Course 模型，并且 course_id 对应 cno
+        except Course.DoesNotExist:
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            topic = Topic.objects.get(tname=topic_name)
+        except Topic.DoesNotExist:
+            return Response({'error': 'Topic not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        discussion_ids = DiscussionWithTopic.objects.filter(tno=topic).values_list('dno', flat=True)
+        discussions = Discussion.objects.filter(cno=course, dno__in=discussion_ids)
+        ser = discussionSerializer(discussions, context={'user_id': request.user.id}, many=True)
+        return Response(ser.data)
 
 
 
