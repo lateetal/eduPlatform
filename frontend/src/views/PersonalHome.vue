@@ -377,8 +377,8 @@
     }
 
     const deleteFolderDialog = (folder) => {
+      delFname.value = folder.fname;
       deleteFolderDialogVisible.value = true;
-
     }
 
     const createFolderDialog = () => {
