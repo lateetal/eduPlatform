@@ -6,9 +6,9 @@ from django.shortcuts import get_object_or_404
 import chatRoom
 from chatRoom import models
 from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage, FavoritesFolder, \
-    Favorite, Topic, DiscussionWithTopic
+    Favorite, Topic, DiscussionWithTopic, Follow
 from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer, FloderSerializer, \
-    FloderDetailSerializer
+    FloderDetailSerializer, FollowSerializer
 from homepage.models import Course
 from homepage.views import extract_user_info_from_auth
 from login.models import User
@@ -438,8 +438,44 @@ class showTopic(APIView):
         ser = discussionSerializer(discussions, context={'user_id': request.user.id}, many=True)
         return Response(ser.data)
 
+#救我我要被绕晕了
+#获取用户的关注者
+class followerView(APIView):
+    def get(self,request):#获取关注列表
+        user_id, user_type = extract_user_info_from_auth(request)
+        followed = Follow.objects.filter(fan_id=user_id)
+        ser = FollowSerializer(followed,many=True)
 
+        return Response({"code": 200, "data": ser.data})
 
+    def post(self,request):#新加关注
+        user_id, user_type = extract_user_info_from_auth(request)
+        follower = request.data.get('follower')
+        follower_id = User.objects.get(username=follower).id
+        Follow.objects.create(followed_id=follower_id, fan_id=user_id)
 
+        return Response({"code": 200, "message":"关注成功"})
+    def delete(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        follower = request.data.get('follower')
+        follower_id = User.objects.get(username=follower).id
+        Follow.objects.get(followed_id=follower_id, fan_id=user_id).delete()
 
+        return Response({"code": 200, "message":"取关成功"})
+
+#获取用户粉丝
+class fanView(APIView):
+    def get(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        fan = Follow.objects.filter(followed_id=user_id)
+        ser = FollowSerializer(fan,many=True)
+        return Response({"code": 200, "data": ser.data})
+
+    def delete(self,request):
+        user_id, user_type = extract_user_info_from_auth(request)
+        fan = request.data.get('fan')
+        fan_id = User.objects.get(username=fan).id
+        Follow.objects.get(followed_id=user_id, fan_id=fan_id).delete()
+
+        return Response({"code": 200, "message":"移除粉丝成功"})
 

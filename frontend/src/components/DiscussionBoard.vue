@@ -25,7 +25,7 @@
       <!-- 显示讨论列表 -->
       <div v-else class="discussion-list">
         <div v-for="discussion in paginatedDiscussions" :key="discussion.dno" class="discussion-item">
-          <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerName }}</span>
+          <span class="author" @click="goToUser(discussion.ownerName)">{{ discussion.ownerName }}</span>
           <h3 @click="goToDiscussionDetail(discussion.dno)" class="discussion-title">{{ discussion.dtitle }}</h3>
           <p @click="goToDiscussionDetail(discussion.dno)" class="discussion-content">{{ discussion.dinfo }}</p>
           <div class="discussion-meta">

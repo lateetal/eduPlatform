@@ -21,8 +21,8 @@ class HomeView(APIView):
             user_id, user_type = extract_user_info_from_auth(request)
             username = User.objects.get(id=user_id).username
         else:
-            username = User.objects.get(id=userNo).username
-            user_type = User.objects.get(id=userNo).user_type
+            username = User.objects.get(username=userNo).username
+            user_type = User.objects.get(username=userNo).user_type
 
         if user_type == 'student':
             student = Student.objects.get(pk=username)

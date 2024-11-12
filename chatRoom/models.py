@@ -74,4 +74,14 @@ class DiscussionWithTopic(models.Model):
     tno = models.ForeignKey('Topic', on_delete=models.CASCADE)
     dno = models.ForeignKey('Discussion', on_delete=models.CASCADE)
 
+#关注其他人
+class Follow(models.Model):
+    fan = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')  # 关注者
+    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')  # 被关注者
+    created_at = models.DateTimeField(auto_now_add=True)  # 关注时间
 
+    class Meta:
+        unique_together = ('fan', 'followed')  # 确保一个用户不能重复关注另一个用户
+
+    def __str__(self):
+        return f"{self.fan.username} follows {self.followed.username}"

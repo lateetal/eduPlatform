@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 import chatRoom
 from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite, atMessage, FavoritesFolder, \
-    DiscussionLike
+    DiscussionLike, Follow
 from login.models import User
 
 #!!!!要解决的部分
@@ -150,3 +150,8 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
          model = Favorite
          fields = ['fno', 'dtitle']
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = '__all__'

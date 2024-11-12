@@ -4,7 +4,7 @@
         <h1>用户主页</h1>
         <div class="user-info">
           <img src="@/assets/avatar.jpg" alt="avatar" class="avatar" />
-          <span>{{ username }} ({{ userType === 'student' ? '学生' : '教师' }})</span>
+          <span>{{ id }} ({{ userType === 'student' ? '学生' : '教师' }})</span>
           <button class="btn btn-ghost" @click="goBack">
             <el-icon><ArrowLeft /></el-icon>
             返回
