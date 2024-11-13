@@ -52,8 +52,8 @@
             <button @click="deleteDiscussion(discussion.dno)" class="delete-btn">删除</button>
             <button @click="editDiscussion(discussion)" class="edit-btn">编辑</button>
 
-            <button @click="postFavorite(discussion)" class="favorite-btn">
-              {{ discussion.is_favourited ? '取消收藏' : '加入收藏' }}
+            <button @click="folderDialog(discussion)" class="favorite-btn">
+              收藏
             </button>
 
             <button @click="likeDiscussion(discussion)" class="favorite-btn">
@@ -117,6 +117,28 @@
         <button type="submit" class="submit-btn">提交帖子</button>
       </form>
     </div>
+    <el-dialog
+        title="加入收藏夹"
+        v-model="folderDialogVisible"
+        width="50%"
+      >
+        <el-form :model="folderForm">
+          <el-form-item label="标题">
+            <span>{{ favorDiscussion.dtitle }}</span>
+          </el-form-item>
+          <el-form-item label="收藏夹">
+            <el-select v-model="favorFno" placeholder="选择收藏夹">
+              <el-option v-for="folder in folders" :key="folder.fno" :label="folder.fname" :value="folder.fno" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="folderDialogVisible = false;clearFolderDialog">取消</el-button>
+            <el-button type="primary" @click="folderDialogVisible = false;handleFavor();clearFolderDialog">提交</el-button>
+          </span>
+        </template>
+      </el-dialog>
   </div>
 </template>
 
@@ -165,6 +187,11 @@ export default {
     const editingDiscussion = ref({});
     const currentPage = ref(1);
     const itemsPerPage = 3;
+
+    const folderDialogVisible = ref(false);
+    const favorDiscussion = ref({});
+    const folders = ref([]);
+    const favorFno = ref(null);
 
     const initOSSClient = () => {
       ossClient.value = new OSS({
@@ -338,24 +365,43 @@ export default {
       router.push(`/course/${props.courseNo}/discussion/${dno}`);
     };
 
-    const postFavorite = async (discussion) => {
-      const API_URL = `http://localhost:8000/homepage/favorite/${discussion.dno}`;
-      const hit = discussion.is_favourited ? '确定要取消收藏' : '确定要加入收藏';
-      const hit2 = discussion.is_favourited ? '取消收藏成功' : '加入收藏成功';
-      if (confirm(hit)) {
-        try {
-          const response = await instance.post(API_URL);
-          if (response.data.code === 200) {
-            alert(hit2);
-            await fetchDiscussions();
-          } else {
-            console.error('添加收藏失败', response.data);
-          }
-        } catch (error) {
-          console.error('请求失败', error);
+    const folderDialog = (discussion) => {
+      favorDiscussion.value = { ...discussion };
+      console.log(favorDiscussion.value.dno)
+      folderDialogVisible.value = true;
+    }
+
+    const fetchFolder = async () => {
+      try{
+        const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
+        if(response.status === 200){
+          folders.value = response.data.data;
         }
+      }catch(err){
+        console.error(err);
       }
     };
+
+    const clearFolderDialog = () => {
+      favorDiscussion.value = {};
+      folders.value = [];
+      favorFno.value = null;
+    }
+
+    const handleFavor = async () => {
+      console.log(favorDiscussion.value.dno)
+      const API_URL = `http://localhost:8000/chatRoom/folder/${favorFno.value}`
+      try{
+        const response = await instance.post(API_URL,{
+          dno:favorDiscussion.value.dno
+        });
+        if(response.status === 200){
+          alert('加入收藏夹成功');
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }
 
     const likeDiscussion = async (discussion) => {
       const API_URL = `http://localhost:8000/chatRoom/DiscussionLike/${discussion.dno}`
@@ -397,6 +443,7 @@ export default {
     onMounted(() => {
       initOSSClient();
       fetchDiscussions();
+      fetchFolder();
     });
 
     return {
@@ -412,6 +459,11 @@ export default {
       editingDiscussion,
       currentPage,
       totalPages,
+      folderDialogVisible,
+      favorDiscussion,
+      folders,
+      favorFno,
+
       filterDiscussions,
       formatDate,
       handleFileUpload,
@@ -421,11 +473,13 @@ export default {
       updateDiscussion,
       cancelEdit,
       goToDiscussionDetail,
-      postFavorite,
       likeDiscussion,
       prevPage,
       nextPage,
       goToUser,
+      folderDialog,
+      clearFolderDialog,
+      handleFavor,
     };
   }
 

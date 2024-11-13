@@ -405,7 +405,7 @@ class FavoriteFolderDetail(APIView):
     def delete(self,request,fno):
         user_id, user_type = extract_user_info_from_auth(request)
         dno = request.data.get('dno')
-        Favorite.objects.get(dno_id=dno).delete()
+        Favorite.objects.get(fno_id=fno,dno_id=dno).delete()
 
         return  Response({"code": 200, "message": "帖子收藏删除成功"})
 
