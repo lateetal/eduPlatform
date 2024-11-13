@@ -221,7 +221,7 @@
         <template #footer>
           <div class="dialog-footer">
             <el-button @click="deleteFolderDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="deleteFolderDialogVisible = false">
+            <el-button type="primary" @click="deleteFolderDialogVisible = false;deleteFolder()">
               确定
             </el-button>
           </div>
@@ -424,7 +424,7 @@
 
     const deleteFolder = async () => {
       try{
-        const response = await axios.delete('http://localhost:8000/chatRoom/all/folder',{
+        const response = await instance.delete('http://localhost:8000/chatRoom/all/folder',{
           data:{
             fname:delFname.value,
           }
