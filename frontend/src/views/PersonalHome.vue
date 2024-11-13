@@ -88,7 +88,7 @@
                 <el-input v-model="form.intro"/>
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="onSubmit()">提交修改</el-button>
+                <el-button type="primary" @click="onSubmit">提交修改</el-button>
               </el-form-item>
             </el-form>
           </div>
@@ -167,8 +167,8 @@
           <div v-if="selectedTab === 'message'" class="person-message">
              <h2>互动消息</h2>
             <div v-if="atmessages.length > 0">
-              <el-list>
-                <el-list-item
+              <ul>
+                <li
                   v-for="(message) in atmessages"
                   :key="message.id"
                   :class="{'unread': !message.status}"
@@ -179,8 +179,8 @@
                     <span v-if="message.status" class="message-read">[已读]</span>
                     {{ message.rinfo }}
                   </div>
-                </el-list-item>
-              </el-list>
+                </li>
+              </ul>
             </div>
           </div>
         </main>
@@ -221,7 +221,7 @@
         <template #footer>
           <div class="dialog-footer">
             <el-button @click="deleteFolderDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="deleteFolderDialogVisible = false">
+            <el-button type="primary" @click="deleteFolderDialogVisible = false;deleteFolder()">
               确定
             </el-button>
           </div>
@@ -279,6 +279,7 @@
     const folderDialogVisible = ref(false);
     const folderDialogTitle = ref('');
     const deleteFolderDialogVisible = ref(false);
+    const delFname = ref('');
 
     const folderForm = ref({
       fno:0,
@@ -376,8 +377,8 @@
     }
 
     const deleteFolderDialog = (folder) => {
+      delFname.value = folder.fname;
       deleteFolderDialogVisible.value = true;
-      console.log('delete',folder.fname)
     }
 
     const createFolderDialog = () => {
@@ -421,9 +422,21 @@
       }
     }
 
-    // const deleteFolder = async (folder) => {
-    //   console.log('delete',folder.fname);
-    // }
+    const deleteFolder = async () => {
+      try{
+        const response = await instance.delete('http://localhost:8000/chatRoom/all/folder',{
+          data:{
+            fname:delFname.value,
+          }
+        });
+        if (response.status === 200) {
+          alert('删除收藏夹成功');
+          await fetchFolder();
+        }
+      }catch(err){
+        console.error('删除失败',err);
+      }
+    }
 
     const goHome = () => {
       if(userType.value === 'student'){
@@ -500,6 +513,7 @@
       }
     }
 
+
     onMounted(async () => {
       await fetchUsername();
       await fetchInfo();
@@ -527,6 +541,7 @@
       deleteFolderDialogVisible,
       folderForm,
       folderDialogTitle,
+      delFname,
 
       logout,
       goHome,
@@ -538,6 +553,7 @@
       createFolderDialog,
       handleFolderSubmit,
       deleteFolderDialog,
+      deleteFolder,
       onSubmit,
     };
   },
@@ -673,23 +689,45 @@
   }
 
   .folder-header {
-  display: flex; 
-  justify-content: space-between; 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
-  
-  .folder-name {
-  font-size: 18px; 
-    margin-right: 60%; 
+
+.folder-name {
+  font-size: 18px;
+  width: 50px;
 }
 
 .folder-btn {
   display: flex;
-  align-items: flex-end;
-  gap: 15px;
+  align-items: center;
+  gap: 8px;
+  margin-left: 60%;
 }
-  .discussion-list p:hover {
-    color: #4769ff; 
-    font-weight: bold; 
-    cursor: pointer;
-  }
+
+.discussion-list p:hover {
+  color: #4769ff;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.el-collapse-item .el-collapse-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.message-unread {
+  color: red;
+}
+
+.message-read {
+  color: green;
+}
+
+.unread {
+  font-weight: bold;
+}
   </style>

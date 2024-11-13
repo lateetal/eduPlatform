@@ -60,7 +60,7 @@
       },
       // 生成一个4位随机验证码（可以包含数字和字母）
       generateRandomCaptcha() {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const characters = 'ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789';
         let captcha = '';
         for (let i = 0; i < 4; i++) {
           const randomIndex = Math.floor(Math.random() * characters.length);

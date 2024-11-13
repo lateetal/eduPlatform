@@ -372,7 +372,7 @@ class FavoriteFolder(APIView):
         fname = request.data.get('fname')
 
         models.FavoritesFolder.objects.filter(userNo_id=user_id, fname=fname).delete()
-        return Response({"code": 200, "message": "收藏夹删除成功"})
+        return Response({"code": 200, "data": fname})
 
     def put(self,request):
         user_id, user_type = extract_user_info_from_auth(request)
