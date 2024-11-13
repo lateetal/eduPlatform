@@ -477,6 +477,12 @@ class CreateAssignmentView(APIView):
             title = request.data.get('title', '')
             description = request.data.get('description', '')
             due_date = request.data.get('due_date', '')
+            isMutualAssessment = request.data.get('isMutualAssessment', False)
+            allowDelaySubmission = request.data.get('allowDelaySubmission', False)
+            delayDate = request.data.get('delayDate', None)
+            maxGrade = request.data.get('maxGrade', 100)
+
+
             assignment_file = request.FILES.get('assignment_file', None)
 
             # 如果有文件，上传到阿里云OSS
@@ -496,7 +502,11 @@ class CreateAssignmentView(APIView):
                 title=title,
                 description=description,
                 assignment_file=file_path,
-                due_date=due_date
+                due_date=due_date,
+                isMutualAssessment=isMutualAssessment,
+                allowDelaySubmission = allowDelaySubmission,
+                delay_date = delayDate,
+                maxGrade = maxGrade
             )
             assignment.save()
             return Response({'message': 'Assignment created successfully!', 'assignment_id': assignment.id},
