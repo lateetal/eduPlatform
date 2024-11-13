@@ -15,4 +15,16 @@ urlpatterns = [
     path('course/message',views.AllCourseMessage.as_view(),name='messagesView'),
     path('course/<str:course_id>/student',views.AllStudent.as_view(),name='studentView'),
 
+    path('course/<str:course_id>/resources/', views.CourseResourceListView.as_view(), name='course-resource-list'),
+    # path('resource/<int:resource_id>/progress/', views.CourseResourceProgressView.as_view(), name='resource-progress'),
+
+    #lzy部分路径
+    path('course/<str:course_id>/assignments/', views.AssignmentListView.as_view(), name='assignment-list'),
+    path('course/<str:course_id>/assignment/<int:assignment_id>/', views.AssignmentDetailView.as_view(),
+         name='assignment-detail'),
+    path('student/course/<str:course_id>/assignment/<int:assignment_id>/submit/',
+         views.AssignmentSubmissionView.as_view(), name='assignment-submit'),
+    path('upload/<str:course_id>/', views.UploadResourceView.as_view(), name='upload-resource'),
+    path('course/<str:course_id>/create_assignment/', views.CreateAssignmentView.as_view(), name='create-assignment'),
+
 ]

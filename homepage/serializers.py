@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student
+from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student, CourseResource, Assignment, \
+    AssignmentSubmission
 
 
 class courseSerializer(serializers.Serializer):
@@ -56,7 +57,25 @@ class CourseMessageStatusSerializer(serializers.ModelSerializer):
         model = CourseMessageStatus
         fields = ['mno', 'mtime', 'mtitle', 'minfo', 'coursename', 'status']
 
+#lzy部分学生课程资源作业部分
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = '__all__'
+
+class CourseResourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseResource
+        fields = ['rno', 'rname', 'rdesc', 'rfile', 'upload_time']
+        #fields = ['rno', 'rname', 'rdesc', 'upload_time']
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = ['id', 'title', 'description', 'due_date','assignment_file']
+
+
+class AssignmentSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignmentSubmission
+        fields = ['submission_id', 'assignment', 'student', 'submission_text', 'submission_file', 'submission_time']
