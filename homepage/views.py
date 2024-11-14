@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from eduPlatform import settings
 from login.models import User
 from . import models
-from .models import ChooseClass, Course, CourseMessage, Teacher, CourseMessageStatus, CourseResource
+from .models import ChooseClass, Course, CourseMessage, Teacher, CourseMessageStatus, CourseResource, Assignment
 from chatRoom.models import Favorite
 from .serializers import courseSerializer, courseDetailSerializer, CourseMessageSerializer, \
     CourseMessageStatusSerializer, StudentSerializer, CourseResourceSerializer, AssignmentSerializer
@@ -477,6 +477,7 @@ class CreateAssignmentView(APIView):
             # 解析表单数据
             title = request.data.get('title', '')
             description = request.data.get('description', '')
+            start_date = request.data.get('start_date','')
             due_date = request.data.get('due_date', '')
             isMutualAssessment = request.data.get('isMutualAssessment', False)
             allowDelaySubmission = request.data.get('allowDelaySubmission', False)
@@ -504,6 +505,7 @@ class CreateAssignmentView(APIView):
                 description=description,
                 assignment_file=file_path,
                 due_date=due_date,
+                start_date=start_date,
                 isMutualAssessment=isMutualAssessment,
                 allowDelaySubmission = allowDelaySubmission,
                 delay_date = delayDate,
@@ -517,6 +519,70 @@ class CreateAssignmentView(APIView):
         except Exception as e:
             return Response({'error': f'An unexpected error occurred: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    #删除布置的作业
+    def delete(self, request, course_id):
+        assignment_id = request.data.get('assignment_id', None)
+
+        assignment = models.Assignment.objects.get(id=assignment_id)
+        bucket.delete_object(assignment.assignment_file)
+
+        Assignment.objects.filter(id=assignment_id).delete()
+        return Response({'message': '作业成功删除'},
+                        status=status.HTTP_201_CREATED)
+
+    #修改布置的作业
+    def put(self, request, course_id):
+        try:
+            assignment_id = request.data.get('assignment_id', None)
+            assignment = models.Assignment.objects.get(id=assignment_id)
+
+            # 更新作业的其他信息
+            title = request.data.get('title', assignment.title)
+            description = request.data.get('description', assignment.description)
+            due_date = request.data.get('due_date', assignment.due_date)
+            start_date = request.data.get('start_date', assignment.start_date)
+            isMutualAssessment = request.data.get('isMutualAssessment', assignment.isMutualAssessment)
+            allowDelaySubmission = request.data.get('allowDelaySubmission', assignment.allowDelaySubmission)
+            delayDate = request.data.get('delayDate', assignment.delay_date)
+            maxGrade = request.data.get('maxGrade', assignment.maxGrade)
+
+            # 处理文件上传，若有新文件则替换旧文件
+            assignment_file = request.FILES.get('assignment_file', None)
+            if assignment_file:
+                # 删除原文件
+                if assignment.assignment_file:
+                    bucket.delete_object(assignment.assignment_file)
+
+                # 上传新文件
+                try:
+                    file_name = f"course/assignments/{course_id}/{assignment_file.name}"
+                    bucket.put_object(file_name, assignment_file)
+                    assignment.assignment_file = file_name
+                except Exception as e:
+                    return Response({'error': f'File upload failed: {str(e)}'},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # 更新作业记录
+            assignment.title = title
+            assignment.description = description
+            assignment.start_date = start_date
+            assignment.due_date = due_date
+            assignment.isMutualAssessment = isMutualAssessment
+            assignment.allowDelaySubmission = allowDelaySubmission
+            assignment.delay_date = delayDate
+            assignment.maxGrade = maxGrade
+            assignment.save()
+
+            return Response({'message': 'Assignment updated successfully!', 'assignment_id': assignment.id},
+                            status=status.HTTP_200_OK)
+
+        except models.Assignment.DoesNotExist:
+            return Response({'error': 'Assignment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': f'An unexpected error occurred: {str(e)}'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 #课程日历和大纲的上传和下载
 class uploadInfoFileView(APIView):

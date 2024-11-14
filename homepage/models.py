@@ -75,10 +75,11 @@ class Assignment(models.Model):
     title = models.CharField(max_length=100)  # 作业标题
     description = models.TextField()  # 作业描述
     assignment_file = models.CharField(max_length=200, blank=True, null=True)  # 作业附件
+    start_date = models.DateTimeField(blank=True, null=True, default=None)  # 作业开始提交的时间
     due_date = models.DateTimeField()  # 截止日期
     isMutualAssessment = models.BooleanField(default=False) #是否是互评
     allowDelaySubmission = models.BooleanField(default=False) #是否能补交
-    delay_date = models.DateField(blank=True, null=True, default=None) #补交最晚截止时间 不设置则可以一直提交
+    delay_date = models.DateTimeField(blank=True, null=True, default=None) #补交最晚截止时间 不设置则可以一直提交
     maxGrade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=100) #作业满分
 
     def __str__(self):

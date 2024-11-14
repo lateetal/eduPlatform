@@ -72,7 +72,7 @@ class CourseResourceSerializer(serializers.ModelSerializer):
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
-        fields = ['id', 'title', 'description', 'due_date','assignment_file']
+        fields = '__all__'
 
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
