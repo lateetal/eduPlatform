@@ -3,6 +3,7 @@
       <header class="header">
         <h1>用户主页</h1>
         <div class="user-info">
+          <button class="btn btn-ghost" @click="followUser">关注</button>
           <img src="@/assets/avatar.jpg" alt="avatar" class="avatar" />
           <span>{{ id }} ({{ userType === 'student' ? '学生' : '教师' }})</span>
           <button class="btn btn-ghost" @click="goBack">
@@ -66,7 +67,6 @@
   import axios from 'axios';
   
   const INFO_URL = 'http://localhost:8000/home/getinfo';
-  const FAVOR_URL = 'http://localhost:8000/homepage/favorite';
   
   const instance = axios.create();
   instance.interceptors.request.use(config => {
@@ -123,19 +123,6 @@
         }
       };
   
-      const fetchFavorites = async () => {
-        try {
-          // In a real application, you would pass the user ID as a parameter
-          const response = await instance.get(`${FAVOR_URL}/${route.params.userId}`);
-          const result = await response.data;
-          if (result.code === 200) {
-            favorites.value = result.data;
-          }
-        } catch (error) {
-          console.error('获取收藏夹数据失败:', error);
-        }
-      };
-  
       const handleSelect = (key) => {
         selectedTab.value = key;
       };
@@ -143,10 +130,23 @@
       const goBack = () => {
         router.go(-1);
       };
+
+      const followUser = async () => {
+        const API_URL = 'http://localhost:8000/chatRoom/getfollower'
+        try{
+          const response = await instance.post(API_URL,{
+            follower:id.value
+          })
+          if(response.status === 200){
+            alert('关注成功');
+          }
+        }catch(err){
+          console.error(err);
+        }
+      }
   
       onMounted(async () => {
         await fetchInfo();
-        await fetchFavorites();
       });
   
       return {
@@ -160,8 +160,10 @@
         username,
         userType,
         selectedTab,
+
         goBack,
         handleSelect,
+        followUser,
       };
     },
     methods: {

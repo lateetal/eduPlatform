@@ -112,8 +112,8 @@
             </div>
             
             <div class="folder-list">
-              <el-collapse>
-                <el-collapse-item v-for="folder in folders" :key="folder.fno">
+              <el-collapse accordion>
+                <el-collapse-item v-for="folder in folders" :key="folder.fno" @click="getFavor(folder.fno)">
                     <template #title>
                       <span class="folder-name">{{folder.fname}}</span>
                       <div class="folder-btn">
@@ -132,8 +132,12 @@
                     </template>
                   <div>
                     <ul>
-                      <li v-for="discussion in folderDiscussions" :key="discussion.dno" class="discussion-list">
-                        <p @click="goToDiscussion(discussion)">{{discussion.dtitle}}</p>
+                      <li v-for="discussion in folderDiscussions" :key="discussion.id" class="discussion-list">
+                        <p>
+                          <button @click="delFavorDialog(discussion)">删除</button>
+                        <span @click="goToDiscussion(discussion.dis_detail)">{{discussion.dis_detail.dtitle}}</span>
+                        </p>
+                        
                       </li>  
                     </ul>
                   </div>
@@ -227,6 +231,22 @@
           </div>
         </template>
       </el-dialog>
+
+      <el-dialog
+        v-model="delFavorDialogVisible"
+        title="提示"
+        width="50%"
+      >
+        <span>确定删除收藏 "{{ delDiscussion.dis_detail.dtitle }}" 吗？</span>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="delFavorDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="delFavorDialogVisible = false;delFavor()">
+              确定
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
     </div>
   </template>
   
@@ -280,6 +300,8 @@
     const folderDialogTitle = ref('');
     const deleteFolderDialogVisible = ref(false);
     const delFname = ref('');
+    const delFavorDialogVisible = ref(false);
+    const delDiscussion = ref({});
 
     const folderForm = ref({
       fno:0,
@@ -287,14 +309,7 @@
       fstatus: true,
     })
 
-    const follows = ref([
-      {
-        username:'22301001',
-      },
-      {
-        username:'22301018',
-      },
-    ]);
+    const follows = ref([]);
 
     const fans = ref([
       {
@@ -306,18 +321,7 @@
     ]);
 
     const folders = ref([]);
-    const folderDiscussions = ref([
-    {
-      courseNo:'1',
-      dno:'1',
-      dtitle:'点赞写好了吗',
-    },
-    {
-      courseNo:'2',
-      dno:'3',
-      dtitle:'随机森林'
-    },
-    ]);
+    const folderDiscussions = ref([]);
 
     const fetchUsername = async () => {
       try {
@@ -457,7 +461,7 @@
     }
 
     const goToDiscussion = (discussion) => {
-      router.push(`/course/${discussion.courseNo}/discussion/${discussion.dno}`)
+      router.push(`/course/${discussion.cno}/discussion/${discussion.dno}`)
     }
 
     const fetchAtmessage = async () => {
@@ -511,6 +515,54 @@
           console.log(err);
         }
       }
+    };
+
+    const getFavor = async (fno) => {
+      const API_URL = `http://localhost:8000/chatRoom/folder/${fno}`;
+      try{
+        const response = await instance.get(API_URL);
+        if(response.status === 200 ){
+          folderDiscussions.value = response.data.data.favorites;
+        }
+      }catch(err){
+        console.error(err);
+      }
+      
+    }
+
+    const delFavorDialog = (discussion) => {
+      delDiscussion.value = discussion;
+      delFavorDialogVisible.value = true;
+    }
+
+    const delFavor = async() => {
+      const API_URL = `http://localhost:8000/chatRoom/folder/${delDiscussion.value.fno}`;
+      try{
+        const response = await instance.delete(API_URL,{
+          data:{
+            dno:delDiscussion.value.dno
+          }  
+          }
+        )
+        if(response.status === 200){
+          alert('取消收藏成功');
+          getFavor(delDiscussion.value.fno)
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }
+
+    const fetchFollower = async() => {
+      const API_URL = 'http://localhost:8000/chatRoom/getfollower'
+      try{
+        const response = await instance.get(API_URL);
+        if(response.status === 200){
+          follows.value = response.data.data;
+        }
+      }catch(err){
+        console.error(err);
+      }
     }
 
 
@@ -519,6 +571,7 @@
       await fetchInfo();
       await fetchAtmessage();
       await fetchFolder();
+      await fetchFollower();
     });
 
     return {
@@ -542,6 +595,8 @@
       folderForm,
       folderDialogTitle,
       delFname,
+      delFavorDialogVisible,
+      delDiscussion,
 
       logout,
       goHome,
@@ -555,6 +610,9 @@
       deleteFolderDialog,
       deleteFolder,
       onSubmit,
+      getFavor,
+      delFavorDialog,
+      delFavor,
     };
   },
   methods: {
