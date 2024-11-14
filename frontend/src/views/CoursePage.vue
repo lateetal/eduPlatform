@@ -43,7 +43,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="uploadDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleUpload">确定</el-button>
+          <el-button type="primary" @click="handleUpload(selectedTab)">确定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -179,7 +179,7 @@ export default {
       uploadForm.value.file = file.raw;
     };
 
-    const handleUpload = async () => {
+    const handleUpload = async (selectedTab) => {
       if (!uploadForm.value.file) {
         ElMessage.error('请选择文件');
         return;
@@ -189,7 +189,13 @@ export default {
       formData.append('file', uploadForm.value.file);
 
       try {
-        const response = await instance.post(`${API_URL}upload/`, formData, {
+        let file_type
+        if(selectedTab == 'outline'){
+          file_type = 'outline';
+        }else{
+          file_type = 'calender'
+        }
+        const response = await instance.post(`${API_URL}course/${courseNo}/upload_file/${file_type}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }

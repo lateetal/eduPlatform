@@ -755,7 +755,7 @@
 
 .folder-name {
   font-size: 18px;
-  width: 50px;
+  width: 200px;
 }
 
 .folder-btn {

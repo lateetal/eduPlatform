@@ -1,5 +1,6 @@
 import time
 import oss2
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
@@ -516,5 +517,57 @@ class CreateAssignmentView(APIView):
         except Exception as e:
             return Response({'error': f'An unexpected error occurred: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#课程日历和大纲的上传和下载
+class uploadInfoFileView(APIView):
+    def post(self, request, course_id, file_type):
+        uploaded_file = request.FILES.get('file')
+
+        if not uploaded_file:
+            return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 获取文件名和扩展名
+        file_name = uploaded_file.name  # e.g., "0001-outline.pdf"
+        if file_type == 'outline':
+            file_path = f"course/outline/{file_name}"
+        else:
+            file_path = f"course/calendar/{file_name}"
+          # 阿里云存储路径
+
+        # 获取文件内容
+        file_content = uploaded_file.read()
+
+        try:
+            # 尝试获取课程信息
+            course = Course.objects.get(pk=course_id)
+
+            if file_type == 'outline':
+                old_file_path = course.coutline
+            else:
+                old_file_path = course.calender
+
+            if old_file_path:
+                try:
+                    bucket.delete_object(old_file_path[1:])
+                except oss2.exceptions.NoSuchKey:
+                    pass  # 如果文件不存在，忽略错误
+
+            # 上传新文件到阿里云 OSS
+            bucket.put_object(file_path, file_content)
+
+            # 更新数据库中的文件路径
+            if file_type == 'outline':
+                course.coutline = f'/{file_path}'
+            else:
+                course.calender = f'/{file_path}'
+            course.save()
+
+            return Response({'code': 200})
+
+        except ObjectDoesNotExist:
+            return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+        except oss2.exceptions.OssError as e:
+            return Response({"error": f"OSS Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 

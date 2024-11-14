@@ -18,6 +18,8 @@ urlpatterns = [
     path('course/<str:course_id>/resources/', views.CourseResourceListView.as_view(), name='course-resource-list'),
     # path('resource/<int:resource_id>/progress/', views.CourseResourceProgressView.as_view(), name='resource-progress'),
 
+    path('course/<str:course_id>/upload_file/<str:file_type>',views.uploadInfoFileView.as_view(),name='upload_file'),
+
     #lzy部分路径
     path('course/<str:course_id>/assignments/', views.AssignmentListView.as_view(), name='assignment-list'),
     path('course/<str:course_id>/assignment/<int:assignment_id>/', views.AssignmentDetailView.as_view(),

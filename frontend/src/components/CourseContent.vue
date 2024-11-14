@@ -17,7 +17,7 @@
           </el-button>
           <el-button 
             type="success" 
-            @click="handleDownload"
+            @click="handleDownload(selectedTab,courseData)"
             v-if="selectedTab === 'outline' || selectedTab === 'calendar'"
           >下载
           </el-button>
@@ -173,9 +173,21 @@ import { marked } from 'marked';
         }
       };
   
-      const handleDownload = () => {
-        console.log('Download button clicked');
-        // Implement download logic here
+      const handleDownload = (selectedTab,courseData) => {
+        let filePath;
+        if(selectedTab === 'outline'){
+          filePath = courseData.data.coutline;
+        }else{
+          filePath = courseData.data.calender;
+        }
+        const downloadUrl = BUCKET_URL + filePath;
+
+        // 创建下载链接并模拟点击
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filePath.split('/').pop(); // 提取文件名
+        link.click();
+
       };
   
       const updateChatHistory = () => {
