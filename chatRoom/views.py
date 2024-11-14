@@ -395,11 +395,18 @@ class FavoriteFolderDetail(APIView):
 
         return Response({"code": 200, "data": ser.data})
 
-    def post(self,request,fno):
+    def post(self, request, fno):
         user_id, user_type = extract_user_info_from_auth(request)
         dno = request.data.get('dno')
-        models.Favorite.objects.create(fno_id=fno, dno_id=dno)
 
+        # 检查是否已经存在相同的收藏记录
+        existing_favorite = models.Favorite.objects.filter(fno_id=fno, dno_id=dno).first()
+
+        if existing_favorite:
+            return Response({"code": 400, "message": "该帖子已被收藏过了"})
+
+        # 如果没有存在相同记录，则创建新的收藏记录
+        models.Favorite.objects.create(fno_id=fno, dno_id=dno)
         return Response({"code": 200, "message": "帖子收藏成功"})
 
     def delete(self,request,fno):
@@ -420,6 +427,7 @@ class FavoriteFolderDetail(APIView):
 
         return Response({"code": 200, "message": "帖子收藏移动成功"})
 
+#展示对应话题下的讨论
 class showTopic(APIView):
     def get(self, request, course_id):
         topic_name = request.data.get('topic')  # 获取请求中的话题
@@ -478,4 +486,5 @@ class fanView(APIView):
         Follow.objects.get(followed_id=user_id, fan_id=fan_id).delete()
 
         return Response({"code": 200, "message":"移除粉丝成功"})
+
 

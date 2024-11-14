@@ -395,8 +395,10 @@ export default {
         const response = await instance.post(API_URL,{
           dno:favorDiscussion.value.dno
         });
-        if(response.status === 200){
+        if(response.data.code === 200){
           alert('加入收藏夹成功');
+        }else if(response.data.code === 400){
+          alert('该帖子已在收藏夹中');
         }
       }catch(err){
         console.error(err);

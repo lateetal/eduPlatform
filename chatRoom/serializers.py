@@ -9,7 +9,8 @@ from login.models import User
 #课程中讨论的展示
 class discussionSerializer(serializers.ModelSerializer):
     pictures = serializers.SerializerMethodField()
-    # is_favourited = serializers.SerializerMethodField()
+    is_favourited = serializers.SerializerMethodField()
+    fno = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     ownerName = serializers.SerializerMethodField()
 
@@ -21,11 +22,29 @@ class discussionSerializer(serializers.ModelSerializer):
             pictures = PictureDisscussion.objects.filter(dno=obj)
             return PictureDisscussionSerializer(pictures,many=True).data
         return []
-    # def get_is_favourited(self, obj):
-    #     user_id = self.context.get('user_id')
-    #     if user_id is not None:
-    #         return Favorite.objects.filter(dno=obj,userNo_id=user_id).exists()
-        return False
+    def get_is_favourited(self, obj):
+        user_id = self.context.get('user_id')
+        if user_id is not None:
+            floders = FavoritesFolder.objects.filter(userNo_id=user_id)
+            for floder in floders:
+                fno = floder.fno
+                if Favorite.objects.filter(dno_id=obj.dno,fno_id=fno).exists():
+                    return True
+            return False
+    def get_fno(self, obj):
+        user_id = self.context.get('user_id')
+        if user_id is not None:
+            # 查找该用户所有收藏夹中的收藏记录
+            folders = FavoritesFolder.objects.filter(userNo_id=user_id)
+            fno_list = []  # 用于存储符合条件的收藏夹 ID
+
+            for folder in folders:
+                if Favorite.objects.filter(dno=obj, fno=folder).exists():
+                    fno_list.append(folder.fno)  # 添加到收藏夹 ID 列表
+
+            return fno_list  # 返回收藏夹 ID 的列表，如果没有收藏，则返回空列表
+        return []  # 如果没有找到用户 ID，返回空列表
+
     def get_ownerName(self, obj):
         user_id = obj.ownerNo_id
         if user_id is not None:
