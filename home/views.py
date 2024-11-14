@@ -17,8 +17,8 @@ from login.models import User
 
 class HomeView(APIView):
     def get(self, request,userNo):
+        user_id, user_type = extract_user_info_from_auth(request)
         if userNo == '0':
-            user_id, user_type = extract_user_info_from_auth(request)
             username = User.objects.get(id=user_id).username
         else:
             username = User.objects.get(username=userNo).username
@@ -26,10 +26,10 @@ class HomeView(APIView):
 
         if user_type == 'student':
             student = Student.objects.get(pk=username)
-            ser = StudentSerializer(student)
+            ser = StudentSerializer(student, context={'user_id':user_id})
         else:
             teacher = Teacher.objects.get(pk=username)
-            ser = TeacherSerializer(teacher)
+            ser = TeacherSerializer(teacher, context={'user_id':user_id})
         return Response({"code":200,"data":ser.data})
 
 class modifyInformation(APIView):

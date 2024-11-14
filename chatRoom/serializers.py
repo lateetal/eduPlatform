@@ -3,14 +3,14 @@ from rest_framework import serializers
 import chatRoom
 from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite, atMessage, FavoritesFolder, \
     DiscussionLike, Follow
+from homepage.models import Student, Teacher
 from login.models import User
 
 #!!!!要解决的部分
 #课程中讨论的展示
 class discussionSerializer(serializers.ModelSerializer):
     pictures = serializers.SerializerMethodField()
-    is_favourited = serializers.SerializerMethodField()
-    fno = serializers.SerializerMethodField()
+    favor = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     ownerName = serializers.SerializerMethodField()
 
@@ -22,27 +22,26 @@ class discussionSerializer(serializers.ModelSerializer):
             pictures = PictureDisscussion.objects.filter(dno=obj)
             return PictureDisscussionSerializer(pictures,many=True).data
         return []
-    def get_is_favourited(self, obj):
-        user_id = self.context.get('user_id')
-        if user_id is not None:
-            floders = FavoritesFolder.objects.filter(userNo_id=user_id)
-            for floder in floders:
-                fno = floder.fno
-                if Favorite.objects.filter(dno_id=obj.dno,fno_id=fno).exists():
-                    return True
-            return False
-    def get_fno(self, obj):
+
+    def get_favor(self, obj):
         user_id = self.context.get('user_id')
         if user_id is not None:
             # 查找该用户所有收藏夹中的收藏记录
             folders = FavoritesFolder.objects.filter(userNo_id=user_id)
-            fno_list = []  # 用于存储符合条件的收藏夹 ID
+            favor_data = []  # 用于存储收藏夹信息的列表
 
             for folder in folders:
-                if Favorite.objects.filter(dno=obj, fno=folder).exists():
-                    fno_list.append(folder.fno)  # 添加到收藏夹 ID 列表
+                # 判断当前讨论是否已被添加到该收藏夹中
+                is_favored = Favorite.objects.filter(dno=obj, fno=folder).exists()
 
-            return fno_list  # 返回收藏夹 ID 的列表，如果没有收藏，则返回空列表
+                # 将收藏夹的信息存入 favor_data 列表
+                favor_data.append({
+                    'fno': folder.fno,
+                    'fname': folder.fname,
+                    'is_favored': is_favored
+                })
+
+            return favor_data  # 返回收藏夹信息列表
         return []  # 如果没有找到用户 ID，返回空列表
 
     def get_ownerName(self, obj):
@@ -171,6 +170,21 @@ class FavoriteSerializer(serializers.ModelSerializer):
          fields = ['fno', 'dtitle']
 
 class FollowSerializer(serializers.ModelSerializer):
+    fanUsername = serializers.SerializerMethodField()
+    fanName = serializers.SerializerMethodField()
+
     class Meta:
         model = Follow
-        fields = '__all__'
+        fields = ['fan_id','fanName', 'fanUsername']
+
+    def get_fanUsername(self, obj):
+        fanUsername = User.objects.get(pk=obj.fan_id).username
+        return fanUsername
+
+    def get_fanName(self, obj):
+        fanUserName = User.objects.get(pk=obj.fan_id).username
+        fanType = User.objects.get(pk=obj.fan_id).user_type
+        if fanType == 'student':
+            return Student.objects.get(sno=fanUserName).sname
+        else:
+            return Teacher.objects.get(tno=fanUserName).tname
