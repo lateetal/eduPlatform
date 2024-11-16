@@ -360,14 +360,6 @@ class AssignmentListView(APIView):
 
 # 作业详情视图
 class AssignmentDetailView(APIView):
-    # def get(self, request, course_id, assignment_id):
-    #     try:
-    #         assignment = models.Assignment.objects.get(id=assignment_id, course_id=course_id)
-    #         serializer = AssignmentSerializer(assignment, many=False)
-    #         return Response({'code': 200, 'data': serializer.data})
-    #     except models.Assignment.DoesNotExist:
-    #         return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
-
     def get(self, request, course_id, assignment_id):
         try:
             # 获取作业详情
@@ -380,15 +372,12 @@ class AssignmentDetailView(APIView):
             # 获取所有选了这门课的学生
             all_students = ChooseClass.objects.filter(cno_id=course_id).values_list('sno', flat=True)
 
-            # 已交作业的学生的名字
-            submitted_student_names = Student.objects.filter(sno__in=submitted_student_ids).values_list('sname',
-                                                                                                        flat=True)
+            # 已交作业的学生的学号和姓名
+            submitted_student_data = Student.objects.filter(sno__in=submitted_student_ids).values('sno', 'sname')
 
-            # 未交作业的学生的名字
-            # 使用sno字段来与ChooseClass中的学生进行匹配
+            # 未交作业的学生的学号和姓名
             not_submitted_student_ids = all_students.exclude(sno__in=submitted_student_ids)
-            not_submitted_student_names = Student.objects.filter(sno__in=not_submitted_student_ids).values_list('sname',
-                                                                                                                flat=True)
+            not_submitted_student_data = Student.objects.filter(sno__in=not_submitted_student_ids).values('sno', 'sname')
 
             # 序列化作业信息
             serializer = AssignmentSerializer(assignment, many=False)
@@ -397,13 +386,13 @@ class AssignmentDetailView(APIView):
             return Response({
                 'code': 200,
                 'data': serializer.data,
-                'submitted_students': list(submitted_student_names),
-                'not_submitted_students': list(not_submitted_student_names),
+                'submitted_students': list(submitted_student_data),  # 返回学号和姓名
+                'not_submitted_students': list(not_submitted_student_data),  # 返回学号和姓名
             })
         except Assignment.DoesNotExist:
             return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
-
+#交作业的详细展示
 class StudentSubmissionDetailView(APIView):
     def get(self, request, course_id, assignment_id, student_id):
         try:
@@ -415,13 +404,7 @@ class StudentSubmissionDetailView(APIView):
             submission_serializer = AssignmentSubmissionSerializer(submission)
 
             # 返回作业提交的详细信息
-            return Response({
-                'code': 200,
-                'student_name': submission.student.sname,
-                # 'submitted_at': submission.submitted_at,
-                # 'grade': submission.grade,
-                'submission_detail': submission_serializer.data,
-            })
+            return Response({'code': 200, 'data': submission_serializer.data})
         except Assignment.DoesNotExist:
             return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
         except AssignmentSubmission.DoesNotExist:
@@ -438,6 +421,8 @@ class AssignmentSubmissionView(APIView):
         try:
             # 获取对应的作业
             assignment = models.Assignment.objects.get(id=assignment_id)
+
+            # 提取用户信息
             try:
                 user_id, user_type = extract_user_info_from_auth(request)
                 student_sno = User.objects.get(pk=user_id).username  # 使用获取到的用户名作为学号
@@ -454,13 +439,20 @@ class AssignmentSubmissionView(APIView):
 
             # 获取提交的作业文本和文件
             submission_text = request.data.get('submission_text', '')
-            print(submission_text)
             submission_file = request.FILES.get('submission_file', None)
+
+            # 检查作业是否超过最后提交时间
+            current_time = timezone.now()
+
+            # 如果作业没有允许延迟提交，并且当前时间超过了 `delay_date`
+            if not assignment.allowDelaySubmission and current_time > assignment.delay_date:
+                return Response({'error': 'You cannot submit this assignment, the deadline has passed.'},
+                                status=status.HTTP_400_BAD_REQUEST)
 
             # 查找是否已有提交记录
             try:
                 existing_submission = models.AssignmentSubmission.objects.get(assignment=assignment, student=student)
-                # 如果已经存在提交记录，删除阿里云上的旧文件
+                # 如果已有提交记录，删除阿里云上的旧文件
                 if existing_submission.submission_file:
                     try:
                         old_file_path = existing_submission.submission_file
@@ -469,9 +461,18 @@ class AssignmentSubmissionView(APIView):
                         print(f"Failed to delete old file from OSS: {str(e)}")
                         return Response({'error': f'Failed to delete old file: {str(e)}'},
                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
                 # 更新提交记录中的文本和文件
                 existing_submission.submission_text = submission_text
+                existing_submission.submitted_at = current_time
+
+                # 计算时间差，确保按时提交时延迟时间为 0
+                if existing_submission.submitted_at <= assignment.due_date:
+                    existing_submission.delay_time = 0
+                else:
+                    # 计算延迟的天数
+                    delay_timedelta = existing_submission.submitted_at - assignment.due_date
+                    existing_submission.delay_time = delay_timedelta.days
+
                 if submission_file:
                     # 上传新的文件到阿里云OSS
                     try:
@@ -501,12 +502,23 @@ class AssignmentSubmissionView(APIView):
                         return Response({'error': f'File upload failed: {str(e)}'},
                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+                # 计算提交时间和延迟时间
+                submittedAt = current_time
+                if submittedAt <= assignment.due_date:
+                    delay_time = 0
+                else:
+                    # 计算延迟的天数
+                    delay_timedelta = submittedAt - assignment.due_date
+                    delay_time = delay_timedelta.days
+
                 # 创建新的作业提交记录
                 submission = models.AssignmentSubmission.objects.create(
                     assignment=assignment,
                     student=student,
                     submission_text=submission_text,
-                    submission_file=file_path
+                    submission_file=file_path,
+                    submitted_at=submittedAt,
+                    delay_time=delay_time
                 )
                 submission.save()
 

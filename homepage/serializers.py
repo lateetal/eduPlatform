@@ -78,4 +78,4 @@ class AssignmentSerializer(serializers.ModelSerializer):
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
-        fields = ['submission_id', 'assignment', 'student', 'submission_text', 'submission_file', 'submission_time']
+        fields = ['id', 'assignment', 'student', 'submission_text', 'submission_file', 'submitted_at']
