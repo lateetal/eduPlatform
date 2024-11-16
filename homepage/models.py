@@ -95,5 +95,91 @@ class AssignmentSubmission(models.Model):
     delay_time = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=None)#延迟交作业的周数，0-不限
     grade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=100)
 
+    mutual_assessments_done = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.student.sname} - {self.assignment.title}"
+#互评作业表
+class MutualAssessment(models.Model):
+    assignment = models.ForeignKey('Assignment', on_delete=models.CASCADE)  # 关联的作业
+    student = models.ForeignKey('Student', on_delete=models.CASCADE)  # 提交互评的学生
+    to_assess_student = models.ForeignKey('Student', related_name='assessments', on_delete=models.CASCADE)  # 被评的学生
+    grade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], null=True,
+                                blank=True)  # 评定成绩
+    feedback = models.TextField(blank=True, null=True)  # 评语
+    assessed_at = models.DateTimeField(auto_now_add=True)  # 提交互评时间
+
+    def __str__(self):
+        return f"Assessment by {self.student} for {self.to_assess_student} - {self.assignment.title}"
+
+    class Meta:
+        unique_together = ('assignment', 'student', 'to_assess_student')
+
+# 文件夹
+class Folder(models.Model):
+    folder_name = models.CharField(max_length=100)  # 文件夹名称
+    folder_desc = models.CharField(max_length=500, blank=True, null=True)  # 文件夹描述
+
+    def __str__(self):
+        return self.folder_name
+
+
+# 课件
+class CourseResource_ppt(models.Model):
+    rno = models.AutoField(max_length=10, primary_key=True)  # 资源编号
+    cname = models.ForeignKey(Course, on_delete=models.CASCADE)  # 关联课程
+    rname = models.CharField(max_length=100)  # 资源名称
+    rdesc = models.CharField(max_length=500, blank=True, null=True)  # 资源描述
+    rfile = models.CharField(max_length=200)  # 资源文件地址（存储在OSS）
+    upload_time = models.DateTimeField(auto_now_add=True)  # 上传时间
+    folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, blank=True, null=True)  # 关联文件夹
+
+    def __str__(self):
+        return self.rname
+
+
+# 试题库
+class CourseResource_test(models.Model):
+    rno = models.AutoField(max_length=10, primary_key=True)  # 资源编号
+    cname = models.ForeignKey(Course, on_delete=models.CASCADE)  # 关联课程
+    rname = models.CharField(max_length=100)  # 资源名称
+    rdesc = models.CharField(max_length=500, blank=True, null=True)  # 资源描述
+    rfile = models.CharField(max_length=200)  # 资源文件地址（存储在OSS）
+    upload_time = models.DateTimeField(auto_now_add=True)  # 上传时间
+    folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, blank=True, null=True)  # 关联文件夹
+
+    def __str__(self):
+        return self.rname
+
+# 习题库
+class Question(models.Model):
+    QUESTION_TYPES = (
+        ('single_choice', '单选题'),
+        ('multiple_choice', '多选题'),
+        ('subjective', '主观题'),
+    )
+    DIFFICULTY_LEVELS = (
+        ('easy', '简单'),
+        ('medium', '中等'),
+        ('hard', '困难'),
+    )
+    # 题目类型
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='single_choice')
+    # 难易程度
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_LEVELS, default='medium')
+    # 考察的知识点
+    knowledge_point = models.CharField(max_length=200)
+    # 题目内容
+    content = models.TextField()
+    # 选项内容（单选题和多选题）
+    options = models.JSONField(blank=True, null=True)  # 存储选项内容的JSON格式，例如：{"A": "选项A", "B": "选项B", ...}
+    # 正确答案（单选题和多选题）
+    correct_answer = models.CharField(max_length=200, blank=True, null=True)  # 存储正确答案的选项字母，例如："A" 或 "A,B"
+    # 答案解析
+    answer_explanation = models.TextField(blank=True, null=True)
+    # 创建时间
+    created_at = models.DateTimeField(auto_now_add=True)
+    # 关联的课程
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='questions')
+
+    def __str__(self):
+        return f"{self.question_type} - {self.content[:50]}"

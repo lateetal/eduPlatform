@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student, CourseResource, Assignment, \
-    AssignmentSubmission
+    AssignmentSubmission, Folder, CourseResource_ppt, CourseResource_test, Question
 
 
 class courseSerializer(serializers.Serializer):
@@ -63,11 +63,25 @@ class StudentSerializer(serializers.ModelSerializer):
         model = Student
         fields = '__all__'
 
-class CourseResourceSerializer(serializers.ModelSerializer):
+class FolderSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CourseResource
-        fields = ['rno', 'rname', 'rdesc', 'rfile', 'upload_time']
-        #fields = ['rno', 'rname', 'rdesc', 'upload_time']
+        model = Folder
+        fields = ['folder_name', 'folder_desc']
+
+class CourseResourceSerializer_ppt(serializers.ModelSerializer):
+    class Meta:
+        model = CourseResource_ppt
+        fields = ['rno', 'rname', 'rdesc', 'rfile', 'upload_time',"folder"]
+
+class CourseResourceSerializer_test(serializers.ModelSerializer):
+    class Meta:
+        model = CourseResource_test
+        fields = ['rno', 'rname', 'rdesc', 'rfile', 'upload_time',"folder"]
+
+class QuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = '__all__'
 
 class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
