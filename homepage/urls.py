@@ -24,6 +24,9 @@ urlpatterns = [
     path('course/<str:course_id>/assignments/', views.AssignmentListView.as_view(), name='assignment-list'),
     path('course/<str:course_id>/assignment/<int:assignment_id>/', views.AssignmentDetailView.as_view(),
          name='assignment-detail'),
+# 查看某个学生提交的作业详情
+    path('course/<str:course_id>/assignment/<int:assignment_id>/student/<int:student_id>/', views.StudentSubmissionDetailView.as_view(),
+         name='student-submission-detail'),
     path('student/course/<str:course_id>/assignment/<int:assignment_id>/submit/',
          views.AssignmentSubmissionView.as_view(), name='assignment-submit'),
     path('upload/<str:course_id>/', views.UploadResourceView.as_view(), name='upload-resource'),

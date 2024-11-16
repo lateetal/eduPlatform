@@ -6,9 +6,9 @@ from django.shortcuts import get_object_or_404
 import chatRoom
 from chatRoom import models
 from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage, FavoritesFolder, \
-    Favorite, Topic, DiscussionWithTopic, Follow
+    Favorite, Topic, DiscussionWithTopic, Follow, FavoritesFolderOfOthers
 from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer, FloderSerializer, \
-    FloderDetailSerializer, FollowSerializer
+    FloderDetailSerializer, FollowSerializer, ComprehensiveFloderSerializer
 from homepage.models import Course
 from homepage.views import extract_user_info_from_auth
 from login.models import User
@@ -353,9 +353,18 @@ class AtMessageView(APIView):
 class FavoriteFolder(APIView):
     def get(self,request):
         user_id, user_type = extract_user_info_from_auth(request)
-        folder = FavoritesFolder.objects.filter(userNo_id=user_id)
-        ser = FloderSerializer(folder, many=True)
 
+        # 获取当前用户的个人收藏夹
+        personal_folders = FavoritesFolder.objects.filter(userNo_id=user_id)
+
+        # 获取他人的收藏夹
+        others_folders = FavoritesFolderOfOthers.objects.filter(collector_id=user_id)
+
+        # 创建序列化器实例，传递查询集和上下文
+        ser = ComprehensiveFloderSerializer(
+            instance={'personal_folders': personal_folders, 'others_folders': others_folders},
+            context={'user_id': user_id}
+        )
         return Response({"code": 200, "data": ser.data})
 
     def post(self,request):
@@ -426,6 +435,69 @@ class FavoriteFolderDetail(APIView):
         favor.save()
 
         return Response({"code": 200, "message": "帖子收藏移动成功"})
+
+#他人收藏夹部分
+class otherfolder(APIView):
+    def post(self, request):
+        # 1. 从请求中提取用户信息
+        user_id, user_type = extract_user_info_from_auth(request)
+
+        # 2. 获取前端传来的fno（收藏夹序号）
+        fno = request.data.get('fno')
+
+        if not fno:
+            return Response({"error": "没有fno"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 3. 查询收藏夹
+            others_folder = FavoritesFolder.objects.get(fno=fno)
+            if others_folder.userNo_id == user_id:
+                return Response({"error": "不能收藏本人收藏夹"}, status=status.HTTP_404_NOT_FOUND)
+
+        except FavoritesFolder.DoesNotExist:
+            return Response({"error": "未找到该收藏夹"}, status=status.HTTP_404_NOT_FOUND)
+
+        # 4. 创建FavoritesFolderOfOthers记录
+
+        try:
+            # 检查是否已经存在相同的记录
+            if FavoritesFolderOfOthers.objects.filter(fno=others_folder, collector_id=user_id).exists():
+                return Response({"message": "该收藏夹已经被收藏过了"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 如果不存在，创建新的收藏夹记录
+            new_favorites_folder_of_others = FavoritesFolderOfOthers(
+                fno=others_folder,
+                collector_id=user_id
+            )
+            new_favorites_folder_of_others.save()
+
+            return Response({"message": "已经成功收藏别人的收藏夹"}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request):
+        # 1. 从请求中提取用户信息
+        user_id, user_type = extract_user_info_from_auth(request)
+
+        # 2. 获取前端传来的fno（收藏夹序号）
+        fno = request.data.get('fno')
+
+        if not fno:
+            return Response({"error": "没有fno"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 3. 查询收藏夹
+            others_folder = FavoritesFolder.objects.get(fno=fno)
+        except FavoritesFolder.DoesNotExist:
+            return Response({"error": "未找到该收藏夹"}, status=status.HTTP_404_NOT_FOUND)
+
+            # 4. 查找并删除对应的收藏记录
+        favorite_record = FavoritesFolderOfOthers.objects.get(fno=others_folder, collector=user_id)
+        favorite_record.delete()
+
+        return Response({"message": "已取消收藏该收藏夹"}, status=status.HTTP_200_OK)
+
 
 #展示对应话题下的讨论
 class showTopic(APIView):

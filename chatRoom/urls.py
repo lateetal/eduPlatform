@@ -16,6 +16,7 @@ urlpatterns = [
     path('atmessage', views.AtMessageView.as_view(), name='atMessage'),
     path('all/folder',views.FavoriteFolder.as_view(),name='allFolder'),
     path('folder/<str:fno>',views.FavoriteFolderDetail.as_view(),name='folderDetail'),
+    path('collectOtherFolder', views.otherfolder.as_view(), name='collectOtherFolder'),
     path('<str:course_id>/showtopic',views.showTopic.as_view(),name='showTopic'),
     path('getfollower',views.followerView.as_view(),name='follower'),
     path('getfan',views.fanView.as_view(),name='fan'),

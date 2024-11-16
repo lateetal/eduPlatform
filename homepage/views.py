@@ -11,10 +11,12 @@ from rest_framework.views import APIView
 from eduPlatform import settings
 from login.models import User
 from . import models
-from .models import ChooseClass, Course, CourseMessage, Teacher, CourseMessageStatus, CourseResource, Assignment
+from .models import ChooseClass, Course, CourseMessage, Teacher, CourseMessageStatus, CourseResource, Assignment, \
+    AssignmentSubmission, Student
 from chatRoom.models import Favorite
 from .serializers import courseSerializer, courseDetailSerializer, CourseMessageSerializer, \
-    CourseMessageStatusSerializer, StudentSerializer, CourseResourceSerializer, AssignmentSerializer
+    CourseMessageStatusSerializer, StudentSerializer, CourseResourceSerializer, AssignmentSerializer, \
+    AssignmentSubmissionSerializer
 from chatRoom.serializers import FavoriteSerializer
 
 from zhipuai import ZhipuAI
@@ -358,13 +360,73 @@ class AssignmentListView(APIView):
 
 # 作业详情视图
 class AssignmentDetailView(APIView):
+    # def get(self, request, course_id, assignment_id):
+    #     try:
+    #         assignment = models.Assignment.objects.get(id=assignment_id, course_id=course_id)
+    #         serializer = AssignmentSerializer(assignment, many=False)
+    #         return Response({'code': 200, 'data': serializer.data})
+    #     except models.Assignment.DoesNotExist:
+    #         return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
     def get(self, request, course_id, assignment_id):
         try:
-            assignment = models.Assignment.objects.get(id=assignment_id, course_id=course_id)
+            # 获取作业详情
+            assignment = Assignment.objects.get(id=assignment_id, course_id=course_id)
+
+            # 获取已交作业的学生
+            submitted_students = AssignmentSubmission.objects.filter(assignment_id=assignment_id)
+            submitted_student_ids = submitted_students.values_list('student_id', flat=True)
+
+            # 获取所有选了这门课的学生
+            all_students = ChooseClass.objects.filter(cno_id=course_id).values_list('sno', flat=True)
+
+            # 已交作业的学生的名字
+            submitted_student_names = Student.objects.filter(sno__in=submitted_student_ids).values_list('sname',
+                                                                                                        flat=True)
+
+            # 未交作业的学生的名字
+            # 使用sno字段来与ChooseClass中的学生进行匹配
+            not_submitted_student_ids = all_students.exclude(sno__in=submitted_student_ids)
+            not_submitted_student_names = Student.objects.filter(sno__in=not_submitted_student_ids).values_list('sname',
+                                                                                                                flat=True)
+
+            # 序列化作业信息
             serializer = AssignmentSerializer(assignment, many=False)
-            return Response({'code': 200, 'data': serializer.data})
-        except models.Assignment.DoesNotExist:
+
+            # 返回作业信息，已交作业学生和未交作业学生
+            return Response({
+                'code': 200,
+                'data': serializer.data,
+                'submitted_students': list(submitted_student_names),
+                'not_submitted_students': list(not_submitted_student_names),
+            })
+        except Assignment.DoesNotExist:
             return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class StudentSubmissionDetailView(APIView):
+    def get(self, request, course_id, assignment_id, student_id):
+        try:
+
+            # 获取该学生的作业提交记录
+            submission = AssignmentSubmission.objects.get(assignment_id=assignment_id, student_id=student_id)
+
+            # 序列化提交记录
+            submission_serializer = AssignmentSubmissionSerializer(submission)
+
+            # 返回作业提交的详细信息
+            return Response({
+                'code': 200,
+                'student_name': submission.student.sname,
+                # 'submitted_at': submission.submitted_at,
+                # 'grade': submission.grade,
+                'submission_detail': submission_serializer.data,
+            })
+        except Assignment.DoesNotExist:
+            return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+        except AssignmentSubmission.DoesNotExist:
+            return Response({'error': 'Submission not found'}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 # 作业提交视图 实现了重复提交只保留最新的记录

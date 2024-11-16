@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 import chatRoom
 from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite, atMessage, FavoritesFolder, \
-    DiscussionLike, Follow
+    DiscussionLike, Follow, FavoritesFolderOfOthers
 from homepage.models import Student, Teacher
 from login.models import User
 
@@ -148,11 +148,54 @@ class AtMessageSerializer(serializers.ModelSerializer):
         cno = Discussion.objects.get(dno=dno).cno_id
         return cno
 
-#无详细信息的收藏夹序列化
+#个人收藏夹序列化器
 class FloderSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoritesFolder
         fields = '__all__'
+
+# 他人的收藏夹序列化器
+class FavoritesFolderOfOthersSerializer(serializers.ModelSerializer):
+    fname = serializers.SerializerMethodField()
+    ownerName = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FavoritesFolderOfOthers
+        fields = ('fno', 'fname', 'ownerName')
+
+    def get_fname(self, obj):
+        # 直接访问外键字段 fno 的属性
+        # 假设 fno 是外键，直接访问 fno 对象的 fname 属性
+        return obj.fno.fname if obj.fno else None
+
+    def get_ownerName(self, obj):
+        # 通过 fno 访问关联的 userNo 外键的属性
+        # 假设 fno 是外键，且 fno 对象有 userNo 外键指向 User
+        if obj.fno and obj.fno.userNo:
+            return obj.fno.userNo.username
+        return None
+
+# 综合序列化器，处理个人收藏夹和他人收藏夹的情况
+class ComprehensiveFloderSerializer(serializers.Serializer):
+    personal_folders = FloderSerializer(many=True)  # 当前用户的个人收藏夹
+    others_folders = FavoritesFolderOfOthersSerializer(many=True)  # 他人的收藏夹
+
+    def to_representation(self, instance):
+        # 获取当前用户
+        user_id = self.context.get('user_id')
+
+        # 获取当前用户的个人收藏夹
+        personal_folders = FavoritesFolder.objects.filter(userNo_id=user_id)
+        personal_folders_serializer = FloderSerializer(personal_folders, many=True, context={'user_id': user_id})
+
+        # 获取他人的收藏夹
+        others_folders = FavoritesFolderOfOthers.objects.filter(collector_id=user_id)
+        others_folders_serializer = FavoritesFolderOfOthersSerializer(others_folders, many=True)
+
+        return {
+            'personal_folders': personal_folders_serializer.data,
+            'others_folders': others_folders_serializer.data
+        }
 
 class FloderDetailSerializer(serializers.ModelSerializer):
     favorites = FavoriteSerializer(source='favorite_set', many=True)
@@ -160,6 +203,7 @@ class FloderDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoritesFolder
         fields = '__all__'
+
 #属于FloderDetailSerializer进行嵌套序列化
 class FavoriteSerializer(serializers.ModelSerializer):
     # 通过外键 dno 获取 Discussion 中的 dtitle 字段
