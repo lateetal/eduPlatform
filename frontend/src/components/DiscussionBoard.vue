@@ -53,7 +53,7 @@
             <button @click="editDiscussion(discussion)" class="edit-btn">编辑</button>
 
             <button @click="folderDialog(discussion)" class="favorite-btn">
-              收藏
+              {{discussion.favor ? '已收藏':'收藏'}}
             </button>
 
             <button @click="likeDiscussion(discussion)" class="favorite-btn">
@@ -118,27 +118,27 @@
       </form>
     </div>
     <el-dialog
-        title="加入收藏夹"
-        v-model="folderDialogVisible"
-        width="50%"
-      >
-        <el-form :model="folderForm">
-          <el-form-item label="标题">
-            <span>{{ favorDiscussion.dtitle }}</span>
-          </el-form-item>
-          <el-form-item label="收藏夹">
-            <el-select v-model="favorFno" placeholder="选择收藏夹">
-              <el-option v-for="folder in folders" :key="folder.fno" :label="folder.fname" :value="folder.fno" />
-            </el-select>
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="folderDialogVisible = false;clearFolderDialog">取消</el-button>
-            <el-button type="primary" @click="folderDialogVisible = false;handleFavor();clearFolderDialog">提交</el-button>
-          </span>
-        </template>
-      </el-dialog>
+      title="加入收藏夹"
+      v-model="folderDialogVisible"
+      width="50%"
+    >
+      <el-form :model="folderForm">
+        <el-form-item label="标题">
+          <span>{{ favorDiscussion.dtitle }}</span>
+        </el-form-item>
+        <el-form-item label="收藏夹">
+          <el-select v-model="favorFno" placeholder="选择收藏夹">
+            <el-option v-for="folder in folders" :key="folder.fno" :label="folder.fname" :value="folder.fno" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="folderDialogVisible = false;clearFolderDialog">取消</el-button>
+          <el-button type="primary" @click="folderDialogVisible = false;handleFavor();clearFolderDialog">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -163,6 +163,7 @@ instance.interceptors.request.use(config => {
 }, error => {
   return Promise.reject(error);
 });
+
 
 export default {
   name: 'DiscussionBoard',
@@ -367,7 +368,6 @@ export default {
 
     const folderDialog = (discussion) => {
       favorDiscussion.value = { ...discussion };
-      console.log(favorDiscussion.value.dno)
       folderDialogVisible.value = true;
     }
 
@@ -389,7 +389,6 @@ export default {
     }
 
     const handleFavor = async () => {
-      console.log(favorDiscussion.value.dno)
       const API_URL = `http://localhost:8000/chatRoom/folder/${favorFno.value}`
       try{
         const response = await instance.post(API_URL,{

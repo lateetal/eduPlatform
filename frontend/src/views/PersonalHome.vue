@@ -144,6 +144,31 @@
                 </el-collapse-item>
               </el-collapse>
             </div>
+
+            <div class="other-folders">
+              <h2>收藏的收藏夹</h2>
+              <el-collapse accordion>
+                <el-collapse-item v-for="folder in otherFolders" :key="folder.fno" @click="getFavor(folder.fno)">
+                    <template #title>
+                      <span class="folder-name">{{folder.fname}}</span>
+                      <div class="folder-btn">
+                        <el-button type="primary" @click="deleteFolderDialog(folder)">
+                          <el-icon><Delete /></el-icon>
+                        </el-button>
+                      </div>
+                    </template>
+                  <div>
+                    <ul>
+                      <li v-for="discussion in folderDiscussions" :key="discussion.id" class="discussion-list">
+                        <p>
+                        <span @click="goToDiscussion(discussion.dis_detail)">{{discussion.dis_detail.dtitle}}</span>
+                        </p>  
+                      </li>  
+                    </ul>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
+            </div>
           </div>
 
           <div v-if="selectedTab === 'follow'" class="person-follow">
@@ -322,6 +347,7 @@
 
     const folders = ref([]);
     const folderDiscussions = ref([]);
+    const otherFolders = ref([]);
 
     const fetchUsername = async () => {
       try {
@@ -478,7 +504,8 @@
       try{
         const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
         if(response.status === 200){
-          folders.value = response.data.data;
+          folders.value = response.data.data.personal_folders;
+          otherFolders.value = response.data.data.others_folders;
         }else{
           this.errorMessage = '请求收藏夹信息失败';
           console.error(error);
@@ -590,6 +617,7 @@
       fans,
       folders,
       folderDiscussions,
+      otherFolders,
       folderDialogVisible,
       deleteFolderDialogVisible,
       folderForm,

@@ -32,6 +32,9 @@
           <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerName }}</span>
           <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
           <span class="like_num">点赞数：{{ discussion.like }}</span>
+          <button @click="folderDialog(discussion)" class="favorite-btn">
+            {{ discussion.is_favourited ? '已收藏' : '收藏' }}
+          </button>
           <button @click="likeDiscussion(discussion)" class="favorite-btn">
               {{ discussion.is_liked ? '取消点赞' : '点赞' }}
           </button>
@@ -113,6 +116,34 @@
         </form>
       </div>
     </div>
+    <el-dialog
+      title="加入收藏夹"
+      v-model="folderDialogVisible"
+      width="50%"
+    >
+      <el-form :model="folderForm">
+        <el-form-item label="标题">
+          <span>{{ favorDiscussion.dtitle }}</span>
+        </el-form-item>
+        <el-form-item label="收藏夹">
+          <el-select v-model="favorFno" placeholder="选择收藏夹">
+            <el-option v-for="folder in folders" :key="folder.fno" :label="folder.fname" :value="folder.fno" />
+          </el-select>
+        </el-form-item>
+        <!-- <el-form-item v-for="item in favoriteItems" :key="item.name">
+          <el-checkbox v-model="item.checked">
+            {{ item.name }}
+            <span class="item-count">{{ item.count }}</span>
+          </el-checkbox>
+        </el-form-item> -->
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="folderDialogVisible = false;clearFolderDialog">取消</el-button>
+          <el-button type="primary" @click="folderDialogVisible = false;handleFavor();clearFolderDialog">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -160,6 +191,11 @@ export default {
       courseNo: '',
       dno: '',
       router: '',
+
+      folderDialogVisible: false,
+      favorDiscussion: {},
+      folders: [],
+      favorFno: null,
     };
   },
   created() {
@@ -168,6 +204,7 @@ export default {
     this.dno = this.$route.params.dno;
     this.fetchDiscussionDetail();
     this.router = useRouter();
+    this.fetchFolder();
   },
   methods: {
     initOSSClient() {
@@ -301,6 +338,7 @@ export default {
         this.error = `操作失败: ${err.message}`;
       }
     },
+
     async likeDiscussion(discussion) {
       try {
         const response = await instance.post(`${API_URL}DiscussionLike/${discussion.dno}`);
@@ -312,11 +350,51 @@ export default {
         this.error = `操作失败: ${err.message}`;
       }
     },
+
     goToUser(userNo){
       this.router.push(`/user/${userNo}`);
     },
+
     goBack(){
       this.router.go(-1);
+    },
+
+    folderDialog(discussion){
+      this.favorDiscussion = {...discussion};
+      this.folderDialogVisible = true;
+    },
+
+    async fetchFolder(){
+      try{
+        const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
+        if(response.status === 200){
+          this.folders = response.data.data;
+        }
+      }catch(err){
+        console.error(err);
+      }
+    },
+
+    clearFolderDialog(){
+      this.favorDiscussion = {};
+      this.folders= [];
+      this.favorFno = null;
+    },
+
+    async handleFavor(){
+      const API_URL = `http://localhost:8000/chatRoom/folder/${this.favorFno}`
+      try{
+        const response = await instance.post(API_URL,{
+          dno:this.favorDiscussion.dno
+        });
+        if(response.data.code === 200){
+          alert('加入收藏夹成功');
+        }else if(response.data.code === 400){
+          alert('该帖子已在收藏夹中');
+        }
+      }catch(err){
+        console.error(err);
+      }
     }
   }
 };
