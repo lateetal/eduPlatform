@@ -117,6 +117,7 @@
                     <template #title>
                       <span class="folder-name">{{folder.fname}}</span>
                       <div class="folder-btn">
+                        <span>赞：{{ folder.likeNum }}</span>
                         <el-switch
                           v-model="folder.fstatus"
                           active-text="公开"
@@ -152,14 +153,14 @@
                     <template #title>
                       <span class="folder-name">{{folder.fname}}</span>
                       <div class="folder-btn">
-                        <el-button type="primary" @click="deleteFolderDialog(folder)">
+                        <el-button type="primary" @click="delFavoredFolder(folder.fno)">
                           <el-icon><Delete /></el-icon>
                         </el-button>
                       </div>
                     </template>
                   <div>
                     <ul>
-                      <li v-for="discussion in folderDiscussions" :key="discussion.id" class="discussion-list">
+                      <li v-for="discussion in otherDiscussions" :key="discussion.id" class="discussion-list">
                         <p>
                         <span @click="goToDiscussion(discussion.dis_detail)">{{discussion.dis_detail.dtitle}}</span>
                         </p>  
@@ -340,12 +341,11 @@
     })
 
     const follows = ref([]);
-
     const fans = ref([]);
-
     const folders = ref([]);
     const folderDiscussions = ref([]);
     const otherFolders = ref([]);
+    const otherDiscussions = ref([]);
 
     const fetchUsername = async () => {
       try {
@@ -504,9 +504,6 @@
         if(response.status === 200){
           folders.value = response.data.data.personal_folders;
           otherFolders.value = response.data.data.others_folders;
-        }else{
-          this.errorMessage = '请求收藏夹信息失败';
-          console.error(error);
         }
       }catch(err){
         console.error(err);
@@ -547,12 +544,15 @@
       try{
         const response = await instance.get(API_URL);
         if(response.status === 200 ){
-          folderDiscussions.value = response.data.data.favorites;
+          if(folders.value.filter(item => item.fno === fno)){
+            folderDiscussions.value = response.data.data.favorites;
+          }else if(otherFolders.value.filter(item => item.fno === fno)){
+            otherDiscussions.value = response.data.data.favorites;
+          }
         }
       }catch(err){
         console.error(err);
       }
-      
     }
 
     const delFavorDialog = (discussion) => {
@@ -636,6 +636,23 @@
       }
     }
 
+    const delFavoredFolder = async(fno) => {
+      const API_URL = `http://localhost:8000/chatRoom/collectOtherFolder`;
+      try{
+        const response = await instance.delete(API_URL,{
+          data:{
+            fno:fno
+          }
+        });
+        if(response.status === 200){
+          alert('取消收藏成功');
+          fetchFolder();
+        }
+      }catch(err){
+        console.log(err);
+      }
+    }
+
 
     onMounted(async () => {
       await fetchUsername();
@@ -670,6 +687,7 @@
       delFname,
       delFavorDialogVisible,
       delDiscussion,
+      otherDiscussions,
 
       logout,
       goHome,
@@ -688,6 +706,7 @@
       delFavor,
       delFan,
       delFollow,
+      delFavoredFolder,
     };
   },
   methods: {
@@ -838,6 +857,10 @@
   align-items: center;
   gap: 8px;
   margin-left: 60%;
+}
+
+.folder-btn span{
+  width:50px;
 }
 
 .discussion-list p:hover {

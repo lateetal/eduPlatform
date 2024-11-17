@@ -512,7 +512,7 @@ class otherfolder(APIView):
             )
             new_favorites_folder_of_others.save()
 
-            return Response({"message": "已经成功收藏别人的收藏夹"}, status=status.HTTP_201_CREATED)
+            return Response({"message": "已经成功收藏别人的收藏夹"}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

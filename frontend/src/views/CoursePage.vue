@@ -16,6 +16,7 @@
         @show-edit-dialog="showEditDialog"
         @show-upload-dialog="showUploadDialog"
         @show-new-folder-dialog="newFolderDialogVisible = true"
+        @show-homework-dialog="showHomeworkDialog"
         @delete-message="deleteMessage"
         @send-message="sendMessage"
       />
@@ -288,6 +289,10 @@ export default {
       }
     };
 
+    const showHomeworkDialog = () =>{
+      console.log('publish homework')
+    }
+
     onMounted(() => {
       fetchUsername();
       fetchCourseData();
@@ -327,6 +332,7 @@ export default {
       deleteMessage,
       sendMessage,
       courseNo,
+      showHomeworkDialog,
     };
   },
 };

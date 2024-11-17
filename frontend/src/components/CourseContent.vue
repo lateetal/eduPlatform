@@ -21,6 +21,14 @@
             v-if="selectedTab === 'outline' || selectedTab === 'calendar'"
           >下载
           </el-button>
+
+          <el-button 
+            type="primary"
+            @click="$emit('show-homework-dialog')"
+            v-if="selectedTab === 'homework'"
+          >
+            布置作业
+          </el-button>
         </div>
       </div>
       

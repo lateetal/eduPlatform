@@ -52,6 +52,15 @@
                 <el-collapse-item v-for="folder in folders" :key="folder.fno" @click="getFavor(folder.fno)">
                     <template #title>
                       <span class="folder-name">{{folder.fname}}</span>
+                      <div class="folder-btn">
+                        <span>赞：{{ folder.likeNum }}</span>
+                        <el-button type="primary" @click="favorFolder(folder.fno)">
+                          {{ isFavored(folder.fno)?'已收藏':'收藏' }}
+                        </el-button>
+                        <el-button type="primary" @click="likeFolder(folder.fno)">
+                          点赞
+                        </el-button>
+                      </div>
                     </template>
                   <div>
                     <ul>
@@ -109,6 +118,8 @@
       const selectedTab = ref('info');
       const isFollowed = ref(false);
       const folderDiscussions = ref([]);
+      const favoredFolders = ref([]);
+      
   
       const fetchInfo = async () => {
         try {
@@ -188,17 +199,19 @@
         }
       }
 
+      //获取当前主页的收藏夹
       const fetchFolders = async() => {
         try{
           const response = await instance.get(`http://localhost:8000/chatRoom/all/folder/${id.value}`);
           if(response.status === 200){
-            folders.value = response.data.data.personal_folders;
+            folders.value = response.data.data.personal_folders.filter(item => item.fstatus === true);
           }
         }catch(err){
           console.error(err);
         }
       }
 
+      //获取收藏夹下的讨论
       const getFavor = async(fno) => {
         const API_URL = `http://localhost:8000/chatRoom/folder/${fno}`;
         try{
@@ -210,11 +223,79 @@
           console.error(err);
         }
       }
+
+      //收藏或取消收藏 收藏夹
+      const favorFolder = async(fno) => {
+        const API_URL = `http://localhost:8000/chatRoom/collectOtherFolder`;
+        if(isFavored(fno)){
+          try{
+            const response = await instance.delete(API_URL,{
+              data:{
+                fno:fno
+              }
+            });
+            if(response.status === 200){
+              alert('取消收藏成功');
+              fetchFavoredFolders();
+            }
+          }catch(err){
+            console.log(err);
+          }
+        }
+        else{
+          try{
+            const response = await instance.post(API_URL,{
+              fno:fno
+            });
+            if(response.status === 200 ){
+              alert('收藏成功');
+              fetchFavoredFolders();
+            }
+          }catch(err){
+            console.error(err);
+          }
+        }
+      }
+
+      //获取用户收藏的收藏夹
+      const fetchFavoredFolders = async() => {
+        try{
+          const response = await instance.get(`http://localhost:8000/chatRoom/all/folder/0`);
+          if(response.status === 200){
+            favoredFolders.value = response.data.data.others_folders;
+          }
+        }catch(err){
+          console.error(err);
+        }
+      }
+
+      const isFavored = (fno) => {
+        if(favoredFolders.value.length === 0){
+          return false;
+        }else if(favoredFolders.value.some(item => item.fno === fno)){
+          return true;
+        }
+        return false;
+      }
+
+      const likeFolder = async(fno) => {
+        try{
+          const response = await instance.post('http://localhost:8000/chatRoom/like/folder',{
+            fno:fno
+          })
+          if(response.status === 200){
+            alert('点赞成功');
+          }
+        }catch(err){
+          console.log(err);
+        }
+      }
   
       onMounted(async () => {
         await fetchInfo();
         await fetchIsFollowed();
         await fetchFolders();
+        await fetchFavoredFolders();
       });
   
       return {
@@ -229,12 +310,16 @@
         folders,
         isFollowed,
         folderDiscussions,
+        favoredFolders,
 
         goBack,
         handleSelect,
         followUser,
         delFollow,
         getFavor,
+        favorFolder,
+        isFavored,
+        likeFolder,
       };
     },
     methods: {
@@ -323,6 +408,17 @@
   .folder-name {
   font-size: 18px;
   width: 200px;
+}
+
+.folder-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 60%;
+}
+
+.folder-btn span{
+  width:50px;
 }
 
 .discussion-list p:hover {
