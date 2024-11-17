@@ -23,9 +23,12 @@ urlpatterns = [
 # 查看某个学生提交的作业详情
     path('course/<str:course_id>/assignment/<int:assignment_id>/student/<int:student_id>/', views.StudentSubmissionDetailView.as_view(),
          name='student-submission-detail'),
+    path('course/<str:course_id>/assignment/<int:assignment_id>/student/<int:student_id>/TeacherAssignment',views.TeacherAssignmentView.as_view(),name='TeacherAssignment'),
+
     path('student/course/<str:course_id>/assignment/<int:assignment_id>/submit/',views.AssignmentSubmissionView.as_view(), name='assignment-submit'),
     path('course/<str:course_id>/create_assignment/', views.CreateAssignmentView.as_view(), name='create-assignment'),
-
+    path('<str:assignment_id>/generateMutualAssessment',views.generateMutualAssessment.as_view(),name='generateMutualAssessment'),
+    path('<str:assignment_id>/mutualAssessment',views.MutualAssessmentView.as_view(),name='mutualAssessment'),
     #课程资源部分
     # path('course/<str:course_id>/resources_ppt/',views.CourseResourceListView_ppt.as_view(), name='resources_ppt'),
     path('course/<str:course_id>/resources_test/',views.CourseResourceListView_test.as_view(), name='resources_ppt'),

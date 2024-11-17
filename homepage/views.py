@@ -1,7 +1,10 @@
+import random
 import time
 import oss2
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.utils import timezone
+from isort.literal import assignment
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.parsers import FormParser
@@ -12,11 +15,12 @@ from eduPlatform import settings
 from login.models import User
 from . import models
 from .models import ChooseClass, Course, CourseMessage, Teacher, CourseMessageStatus, CourseResource, Assignment, \
-    AssignmentSubmission, Student, Question, Folder, CourseResource_test, CourseResource_ppt
+    AssignmentSubmission, Student, Question, Folder, CourseResource_test, CourseResource_ppt, MutualAssessment
 from chatRoom.models import Favorite
 from .serializers import courseSerializer, courseDetailSerializer, CourseMessageSerializer, \
     CourseMessageStatusSerializer, StudentSerializer, AssignmentSerializer, \
-    AssignmentSubmissionSerializer, QuestionSerializer, CourseResourceSerializer_test, CourseResourceSerializer_ppt
+    AssignmentSubmissionSerializer, QuestionSerializer, CourseResourceSerializer_test, CourseResourceSerializer_ppt, \
+    TeacherAssignmentSerializer
 from chatRoom.serializers import FavoriteSerializer
 
 from zhipuai import ZhipuAI
@@ -392,7 +396,7 @@ class AssignmentDetailView(APIView):
         except Assignment.DoesNotExist:
             return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
-#交作业的详细展示
+#交作业的详细展示 教师判卷接口
 class StudentSubmissionDetailView(APIView):
     def get(self, request, course_id, assignment_id, student_id):
         try:
@@ -410,6 +414,52 @@ class StudentSubmissionDetailView(APIView):
         except AssignmentSubmission.DoesNotExist:
             return Response({'error': 'Submission not found'}, status=status.HTTP_404_NOT_FOUND)
 
+#查看教师评语和判作业 实现多次提交判作业
+class TeacherAssignmentView(APIView):
+    def get(self, request, course_id, assignment_id,student_id):
+        submission = AssignmentSubmission.objects.get(assignment_id=assignment_id, student_id=student_id)
+        TeacherAssignment = models.TeacherAssignment.objects.get(assignment_id=assignment_id,AssignmentSubmission=submission)
+        ser = TeacherAssignmentSerializer(TeacherAssignment)
+
+        return Response({'code': 200, 'data': ser.data})
+
+    def post(self, request, course_id, assignment_id, student_id):
+        # 获取作业提交对象
+        submission = AssignmentSubmission.objects.get(assignment_id=assignment_id, student_id=student_id)
+        assignment = Assignment.objects.get(pk=assignment_id)
+        # 获取成绩和评语
+        grade = request.data.get("grade")
+        feedback = request.data.get("feedback")
+        show_feedback = request.data.get("show_feedback", False)
+
+        if grade is None:
+            return Response({'error': '成绩不能为空'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            # 尝试将成绩转换为整数
+            grade = int(grade)
+        except ValueError:
+            return Response({'error': '成绩必须是有效的数字'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # 判断成绩是否在有效范围内
+        if grade < 0 or grade > assignment.maxGrade:
+            return Response({'error': f'成绩必须在 0 到 {assignment.maxGrade} 之间'},status=status.HTTP_400_BAD_REQUEST)
+
+        # 检查是否已有评分记录
+        teacher_assignment, created = models.TeacherAssignment.objects.update_or_create(
+            defaults={
+                'grade': grade,
+                'feedback': feedback,
+                'assessed_at': timezone.now(),
+                'AssignmentSubmission_id':submission.id,
+                'assignment_id': assignment_id,
+                'showFeedback': show_feedback
+            }
+        )
+
+        if created:
+            return Response({"detail": "作业批改成功"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"detail": "作业更新成功"}, status=status.HTTP_200_OK)
 
 
 # 作业提交视图 实现了重复提交只保留最新的记录
@@ -657,6 +707,116 @@ class CreateAssignmentView(APIView):
             return Response({'error': f'An unexpected error occurred: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+#作业互评，互评表生成
+class generateMutualAssessment(APIView):
+    def post(self, request, assignment_id):
+        # 获取所有该作业的提交记录
+        submissions = AssignmentSubmission.objects.filter(assignment_id=assignment_id)
+
+        # 如果作业没有提交或者人数太少，无法生成互评
+        if submissions.count() < 2:
+            return Response({'error': '作业提交人数过少，无法生成互评'}, status=status.HTTP_404_NOT_FOUND)
+
+        students = [submission.student for submission in submissions]
+        num_students = len(students)
+
+        # 如果人数为奇数，进行适当的处理（例如循环评审）
+        mutual_assessments = []  # 用于保存互评信息
+
+        # 循环分配评审，确保每个学生的作业被评审两次
+        for i, student in enumerate(students):
+            # 每个学生评审其他学生的作业，排除自己
+            to_assess_students = [students[(i + j) % num_students] for j in range(1, 3)]  # 下一个和下下一个学生
+
+            # 将评审任务添加到互评列表
+            for to_assess_student in to_assess_students:
+                mutual_assessments.append(MutualAssessment(
+                    assignment_id=assignment_id,
+                    student=student,
+                    to_assess_student=to_assess_student
+                ))
+
+        # 批量创建互评数据
+        with transaction.atomic():
+            MutualAssessment.objects.bulk_create(mutual_assessments)
+
+        return Response({'message': '互评任务发布成功'}, status=status.HTTP_200_OK)
+
+#获取要互评的作业和评价接口
+class MutualAssessmentView(APIView):
+    def get(self, request, assignment_id):
+        # 获取当前用户信息
+        user_id, user_type = extract_user_info_from_auth(request)
+        username = User.objects.get(id=user_id).username
+
+        # 获取当前用户的互评记录
+        mutual_assessments = MutualAssessment.objects.filter(assignment_id=assignment_id, student_id=username)
+
+        if not mutual_assessments.exists():
+            return Response({'code': 404, 'message': '没有互评记录'}, status=status.HTTP_404_NOT_FOUND)
+
+        assignments = []
+        for mutual_assessment in mutual_assessments:
+            # 获取待评估学生的作业
+            assignment = models.AssignmentSubmission.objects.filter(assignment_id=assignment_id,
+                                                                    student_id=mutual_assessment.to_assess_student).first()
+
+            if assignment:
+                assignments.append(assignment)
+
+        if not assignments:
+            return Response({'code': 404, 'message': '未找到相关作业'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 使用 AssignmentSerializer 进行序列化
+        ser = AssignmentSubmissionSerializer(assignments, many=True)
+
+        # 返回序列化的数据
+        return Response({'code': 200, 'data': ser.data})
+
+    def post(self, request, assignment_id):
+        user_id, user_type = extract_user_info_from_auth(request)
+        username = User.objects.get(id=user_id).username
+        assignment = models.Assignment.objects.get(pk=assignment_id)
+
+        toAssessStudentId = request.data.get('toAssessStudentId', None)
+        grade = request.data.get('grade', None)
+        feedback = request.data.get('feedback', None)
+
+        try:
+            # 尝试将成绩转换为整数
+            grade = int(grade)
+        except ValueError:
+            return Response({'error': '成绩必须是有效的数字'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # 判断成绩是否在有效范围内
+        if grade < 0 or grade > assignment.maxGrade:
+            return Response({'error': f'成绩必须在 0 到 {assignment.maxGrade} 之间'},status=status.HTTP_400_BAD_REQUEST)
+
+        #计算作业成绩
+        AssignmentSubmission = models.AssignmentSubmission.objects.get(assignment_id=assignment_id, student_id=toAssessStudentId)
+        if AssignmentSubmission.grade == -1:
+            AssignmentSubmission.grade = grade
+        else:
+            AssignmentSubmission.grade = (AssignmentSubmission.grade + grade)/2
+
+        if AssignmentSubmission.delay_time == 0:
+            AssignmentSubmission.delay_grade = grade
+        else:
+            AssignmentSubmission.delay_grade = grade*(10-(AssignmentSubmission.delay_time+6)//7)*0.1
+
+        mutual_assessment = MutualAssessment.objects.get(assignment_id=assignment_id,student_id=username,to_assess_student_id=toAssessStudentId)
+        mutual_assessment.grade = grade
+        mutual_assessment.feedback = feedback
+        mutual_assessment.assessed_at = timezone.now()
+        mutual_assessment.is_assessed = True
+        mutual_assessment.save()
+
+        assessmentCount = MutualAssessment.objects.filter(assignment_id=assignment_id,to_assess_student_id=toAssessStudentId,is_assessed=False).count()
+        if assessmentCount == 0:
+            AssignmentSubmission.mutual_assessments_done = True#将作业标记为互评完成
+
+        AssignmentSubmission.save()
+        return Response({'message': '评分成功'}, status=status.HTTP_200_OK)
 
 #课程日历和大纲的上传和下载
 class uploadInfoFileView(APIView):
@@ -857,6 +1017,7 @@ class CourseQuestionListView(APIView):
         except Exception as e:
             return Response({'error': f'An unexpected error occurred: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def delete(self, request, course_id):
         id = request.data.get('id', None)
         Question.objects.filter(id=id).delete()

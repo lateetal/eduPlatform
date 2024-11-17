@@ -92,12 +92,14 @@ class AssignmentSubmission(models.Model):
     submission_text = models.TextField(blank=True, null=True)  # 作业文本
     submission_file = models.CharField(max_length=200, blank=True, null=True)  # 文件地址（存储在OSS）
     submitted_at = models.DateTimeField(auto_now_add=True)  # 提交时间
-    delay_time = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=None)#延迟交作业的周数，0-不限
-    grade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=100)
+    delay_time = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=None)#延迟交作业的天数，0-不限
+    grade = models.IntegerField(validators=[MinValueValidator(-1), MaxValueValidator(100)], default=-1)
+    delay_grade = models.IntegerField(validators=[MinValueValidator(-1), MaxValueValidator(100)], default=-1)#延迟交作业的成绩
 
     mutual_assessments_done = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.student.sname} - {self.assignment.title}"
+
 #互评作业表
 class MutualAssessment(models.Model):
     assignment = models.ForeignKey('Assignment', on_delete=models.CASCADE)  # 关联的作业
@@ -107,12 +109,24 @@ class MutualAssessment(models.Model):
                                 blank=True)  # 评定成绩
     feedback = models.TextField(blank=True, null=True)  # 评语
     assessed_at = models.DateTimeField(auto_now_add=True)  # 提交互评时间
+    is_assessed = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Assessment by {self.student} for {self.to_assess_student} - {self.assignment.title}"
 
     class Meta:
         unique_together = ('assignment', 'student', 'to_assess_student')
+
+#教师批改作业
+class TeacherAssignment(models.Model):
+    assignment = models.ForeignKey('Assignment', on_delete=models.CASCADE)  # 关联的作业
+    AssignmentSubmission = models.ForeignKey('AssignmentSubmission', on_delete=models.CASCADE)
+    grade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], null=True,
+                                blank=True)  # 评定成绩
+    feedback = models.TextField(blank=True, null=True)  # 评语
+    assessed_at = models.DateTimeField(auto_now_add=True)  # 提交互评时间
+    showFeedback = models.BooleanField(default=False)
+
 
 # 文件夹
 class Folder(models.Model):

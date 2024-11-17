@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student, CourseResource, Assignment, \
-    AssignmentSubmission, Folder, CourseResource_ppt, CourseResource_test, Question
+    AssignmentSubmission, Folder, CourseResource_ppt, CourseResource_test, Question, TeacherAssignment
 
 
 class courseSerializer(serializers.Serializer):
@@ -93,3 +93,19 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
         fields = ['id', 'assignment', 'student', 'submission_text', 'submission_file', 'submitted_at']
+
+class TeacherAssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeacherAssignment
+        fields = '__all__'
+
+class AssignmentSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.sname')  # Assuming 'sname' is the field name for student's name
+
+    class Meta:
+        model = AssignmentSubmission
+        fields = [
+            'student_id', 'student_name', 'submission_text', 'submission_file',
+            'submitted_at', 'delay_time', 'grade'
+        ]
+        read_only_fields = ['student_id', 'student_name', 'submission_text', 'submission_file', 'submitted_at', 'delay_time', 'grade']
