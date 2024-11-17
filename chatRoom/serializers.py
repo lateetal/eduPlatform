@@ -34,12 +34,13 @@ class discussionSerializer(serializers.ModelSerializer):
                 # 判断当前讨论是否已被添加到该收藏夹中
                 is_favored = Favorite.objects.filter(dno=obj, fno=folder).exists()
 
-                # 将收藏夹的信息存入 favor_data 列表
-                favor_data.append({
-                    'fno': folder.fno,
-                    'fname': folder.fname,
-                    'is_favored': is_favored
-                })
+                if folder.userNo_id == user_id:
+                    # 将收藏夹的信息存入 favor_data 列表
+                    favor_data.append({
+                        'fno': folder.fno,
+                        'fname': folder.fname,
+                        'is_favored': is_favored
+                    })
 
             return favor_data  # 返回收藏夹信息列表
         return []  # 如果没有找到用户 ID，返回空列表
