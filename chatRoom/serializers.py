@@ -224,7 +224,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
          model = Favorite
          fields = ['fno', 'dtitle']
 
-class FollowSerializer(serializers.ModelSerializer):
+class FanSerializer(serializers.ModelSerializer):
     fanUsername = serializers.SerializerMethodField()
     fanName = serializers.SerializerMethodField()
 
@@ -243,3 +243,50 @@ class FollowSerializer(serializers.ModelSerializer):
             return Student.objects.get(sno=fanUserName).sname
         else:
             return Teacher.objects.get(tno=fanUserName).tname
+
+
+class FanSerializer(serializers.ModelSerializer):
+    fanUsername = serializers.SerializerMethodField()  # 关注者的用户名
+    fanName = serializers.SerializerMethodField()  # 关注者的名字（学生/教师）
+
+    class Meta:
+        model = Follow
+        fields = ['fan_id', 'fanUsername', 'fanName']
+
+    # 获取关注者的用户名
+    def get_fanUsername(self, obj):
+        return User.objects.get(pk=obj.fan_id).username
+
+    # 获取关注者的名字，判断是学生还是教师
+    def get_fanName(self, obj):
+        fanUserName = obj.fan.username
+        fanType = obj.fan.user_type
+        if fanType == 'student':
+            return Student.objects.get(sno=fanUserName).sname
+        else:
+            return Teacher.objects.get(tno=fanUserName).tname
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    followedUsername = serializers.SerializerMethodField()  # 被关注者的用户名
+    followedName = serializers.SerializerMethodField()  # 被关注者的名字（学生/教师）
+
+    class Meta:
+        model = Follow
+        fields = ['followed', 'followedUsername', 'followedName']
+
+    # 获取被关注者的用户名
+    def get_followedUsername(self, obj):
+        return obj.followed.username
+
+    # 获取被关注者的名字，判断是学生还是教师
+    def get_followedName(self, obj):
+        followedUserName = obj.followed.username
+        followedType = obj.followed.user_type  # 获取被关注者的类型（学生或教师）
+
+        if followedType == 'student':
+            # 如果是学生，从 Student 表中获取姓名
+            return Student.objects.get(sno=followedUserName).sname
+        else:
+            # 如果是教师，从 Teacher 表中获取姓名
+            return Teacher.objects.get(tno=followedUserName).tname

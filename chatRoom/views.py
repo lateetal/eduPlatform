@@ -8,7 +8,7 @@ from chatRoom import models
 from chatRoom.models import Discussion, Review, PictureReview, PictureDisscussion, Like, atMessage, FavoritesFolder, \
     Favorite, Topic, DiscussionWithTopic, Follow, FavoritesFolderOfOthers
 from chatRoom.serializers import discussionSerializer, ReviewSerializer, AtMessageSerializer, FloderSerializer, \
-    FloderDetailSerializer, FollowSerializer, ComprehensiveFloderSerializer
+    FloderDetailSerializer, FollowSerializer, ComprehensiveFloderSerializer, FanSerializer
 from homepage.models import Course
 from homepage.views import extract_user_info_from_auth
 from login.models import User
@@ -330,6 +330,36 @@ class DiscussionLikeView(APIView):
             new_like = models.DiscussionLike.objects.create(userNo=user, dno=discussion)
             return Response({"code": 200, "message": '点赞成功'})
 
+#对收藏夹点赞的逻辑
+class FavoritesFolderLike(APIView):
+    def post(self, request):
+        # 提取用户信息
+        user_id, user_type = extract_user_info_from_auth(request)
+        fno = request.data.get('fno')
+        # 尝试获取用户和收藏夹
+        try:
+            user = User.objects.get(pk=user_id)
+            folder = FavoritesFolder.objects.get(fno=fno)
+        except User.DoesNotExist:
+            return Response({'error': '用户未找到'}, status=status.HTTP_404_NOT_FOUND)
+        except FavoritesFolder.DoesNotExist:
+            return Response({'error': '收藏夹未找到'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 检查用户是否已经点赞该收藏夹
+        existing_like = models.FavoritesFolderLike.objects.filter(userNo=user, fno=folder).first()
+
+        if existing_like:
+            # 如果存在，则删除点赞
+            folder.likeNum = folder.likeNum - 1
+            folder.save()
+            existing_like.delete()
+            return Response({"code": 200, "message": '取消点赞成功'})
+        else:
+            # 如果不存在，则创建新的点赞
+            folder.likeNum = folder.likeNum + 1
+            folder.save()
+            new_like = models.FavoritesFolderLike.objects.create(userNo=user, fno=folder)
+            return Response({"code": 200, "message": '点赞成功'})
 
 class AtMessageView(APIView):
     def get(self,request):
@@ -435,6 +465,8 @@ class FavoriteFolderDetail(APIView):
         favor.save()
 
         return Response({"code": 200, "message": "帖子收藏移动成功"})
+
+
 
 #他人收藏夹部分
 class otherfolder(APIView):
@@ -548,7 +580,7 @@ class fanView(APIView):
     def get(self,request):
         user_id, user_type = extract_user_info_from_auth(request)
         fan = Follow.objects.filter(followed_id=user_id)
-        ser = FollowSerializer(fan,many=True)
+        ser = FanSerializer(fan,many=True)
         return Response({"code": 200, "data": ser.data})
 
     def delete(self,request):

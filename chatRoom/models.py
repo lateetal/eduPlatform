@@ -31,12 +31,16 @@ class PictureReview(models.Model):
     rno = models.ForeignKey('Review', on_delete=models.CASCADE)
     pfile = models.FileField(upload_to='pictures')
 
-class Like(models.Model):
+class Like(models.Model):#回复的点赞
     rno = models.ForeignKey('Review', on_delete=models.CASCADE)
     userNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
 
 class DiscussionLike(models.Model):
     dno = models.ForeignKey('Discussion', on_delete=models.CASCADE)
+    userNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
+
+class FavoritesFolderLike(models.Model):
+    fno = models.ForeignKey('FavoritesFolder', on_delete=models.CASCADE)
     userNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
 
 #收藏夹 每个用户至少一个默认收藏夹
@@ -45,6 +49,7 @@ class FavoritesFolder(models.Model):
     userNo = models.ForeignKey('login.User', on_delete=models.CASCADE)
     fname = models.CharField(max_length=50)
     fstatus = models.BooleanField(default=False)#他人是否可见
+    likeNum = models.IntegerField(default=0)
 
 #收藏夹中的收藏信息
 class Favorite(models.Model):
@@ -85,3 +90,4 @@ class Follow(models.Model):
 
     def __str__(self):
         return f"{self.fan.username} follows {self.followed.username}"
+
