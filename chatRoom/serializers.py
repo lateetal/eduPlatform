@@ -12,6 +12,7 @@ class discussionSerializer(serializers.ModelSerializer):
     pictures = serializers.SerializerMethodField()
     favor = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
     ownerName = serializers.SerializerMethodField()
 
     class Meta:
@@ -60,6 +61,15 @@ class discussionSerializer(serializers.ModelSerializer):
             return True  # 找到记录，则返回 True
         except DiscussionLike.DoesNotExist:
             # 如果找不到记录，则返回 False
+            return False
+    def get_is_favorited(self, obj):
+        user_id = self.context.get('user_id')
+        if user_id is not None:
+            floders = FavoritesFolder.objects.filter(userNo_id=user_id)
+            for floder in floders:
+                fno = floder.fno
+                if Favorite.objects.filter(dno_id=obj.dno,fno_id=fno).exists():
+                    return True
             return False
 
 
