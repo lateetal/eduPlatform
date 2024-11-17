@@ -381,8 +381,11 @@ class AtMessageView(APIView):
 
 #用户看他人也通过这个接口来找，根据status来决定展示与否
 class FavoriteFolder(APIView):
-    def get(self,request):
-        user_id, user_type = extract_user_info_from_auth(request)
+    def get(self,request,userNo):
+        if userNo == '0':
+            user_id, user_type = extract_user_info_from_auth(request)
+        else:
+            user_id = userNo
 
         # 获取当前用户的个人收藏夹
         personal_folders = FavoritesFolder.objects.filter(userNo_id=user_id)

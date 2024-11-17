@@ -103,3 +103,4 @@ class Password(APIView):
         update_session_auth_hash(request, user)
 
         return Response({"code": 200, "data": {'success': '密码修改成功'}}, status=200)
+
