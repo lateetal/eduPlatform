@@ -112,7 +112,7 @@
             </div>
             
             <div class="folder-list">
-              <el-collapse accordion>
+              <el-collapse v-if="folders.length > 0" accordion>
                 <el-collapse-item v-for="folder in folders" :key="folder.fno" @click="getFavor(folder.fno)">
                     <template #title>
                       <span class="folder-name">{{folder.fname}}</span>
@@ -137,17 +137,17 @@
                           <button @click="delFavorDialog(discussion)">删除</button>
                         <span @click="goToDiscussion(discussion.dis_detail)">{{discussion.dis_detail.dtitle}}</span>
                         </p>
-                        
                       </li>  
                     </ul>
                   </div>
                 </el-collapse-item>
               </el-collapse>
+              <span v-else>暂无收藏夹</span>
             </div>
 
             <div class="other-folders">
               <h2>收藏的收藏夹</h2>
-              <el-collapse accordion>
+              <el-collapse v-if="otherFolders.length>0" accordion>
                 <el-collapse-item v-for="folder in otherFolders" :key="folder.fno" @click="getFavor(folder.fno)">
                     <template #title>
                       <span class="folder-name">{{folder.fname}}</span>
@@ -168,28 +168,33 @@
                   </div>
                 </el-collapse-item>
               </el-collapse>
+              <span v-else>暂无收藏的收藏夹</span>
             </div>
           </div>
 
           <div v-if="selectedTab === 'follow'" class="person-follow">
             <h2>关注列表</h2>
             <div class="follow-list">
-              <ul>
-                <li v-for="follow in follows" :key="follow.username">
-                  <h3 @click="goToUser(follow.username)">{{ follow.username }}</h3>
+              <ul v-if="follows.length > 0">
+                <li v-for="follow in follows" :key="follow.followed" class="follow-item">
+                  <button @click="delFollow(follow.followedUsername)" class="delFollow-btn">移除</button>
+                  <h3 @click="goToUser(follow.followedUsername)">{{ follow.followedName }} {{ follow.followedUsername }}</h3>
                 </li>
               </ul>
+              <span v-else>暂无关注</span>
             </div>
           </div>
 
           <div v-if="selectedTab === 'fans'" class="person-fans">
             <h2>粉丝列表</h2>
             <div class="fan-list">
-              <ul>
-                <li v-for="fan in fans" :key="fan.username">
-                  <h3 @click="goToUser(fan.username)">{{ fan.username }}</h3>
+              <ul v-if="fans.length > 0">
+                <li v-for="fan in fans" :key="fan.fan_id" class="fan-item">
+                  <button @click="delFan(fan.fanUsername)" class="delFan-btn">移除</button>
+                  <h3 @click="goToUser(fan.fanUsername)">{{ fan.fanName }} {{ fan.fanUsername }}</h3>
                 </li>
               </ul>
+              <span v-else>暂无粉丝</span>
             </div>
           </div>
 
@@ -336,14 +341,7 @@
 
     const follows = ref([]);
 
-    const fans = ref([
-      {
-        username:'22301001',
-      },
-      {
-        username:'22301082',
-      },
-    ]);
+    const fans = ref([]);
 
     const folders = ref([]);
     const folderDiscussions = ref([]);
@@ -428,7 +426,7 @@
 
     const createFolder = async () => {
       try {
-        const response = await instance.post('http://localhost:8000/chatRoom/all/folder',
+        const response = await instance.post('http://localhost:8000/chatRoom/all/folder/0',
         {fstatus:folderForm.value.fstatus, fname:folderForm.value.fname,});
         if (response.status === 200) {
           alert('创建收藏夹成功');
@@ -441,7 +439,7 @@
 
     const editFolder = async () => {
       try {
-        const response = await instance.put('http://localhost:8000/chatRoom/all/folder',
+        const response = await instance.put('http://localhost:8000/chatRoom/all/folder/0',
         {fstatus:folderForm.value.fstatus, fname:folderForm.value.fname,fno:folderForm.value.fno,});
         if (response.status === 200) {
           alert('修改收藏夹成功');
@@ -454,7 +452,7 @@
 
     const deleteFolder = async () => {
       try{
-        const response = await instance.delete('http://localhost:8000/chatRoom/all/folder',{
+        const response = await instance.delete('http://localhost:8000/chatRoom/all/folder/0',{
           data:{
             fname:delFname.value,
           }
@@ -502,7 +500,7 @@
 
     const fetchFolder = async () => {
       try{
-        const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
+        const response = await instance.get('http://localhost:8000/chatRoom/all/folder/0');
         if(response.status === 200){
           folders.value = response.data.data.personal_folders;
           otherFolders.value = response.data.data.others_folders;
@@ -592,6 +590,52 @@
       }
     }
 
+    const fetchFans = async() => {
+      const API_URL = 'http://localhost:8000/chatRoom/getfan'
+      try{
+        const response = await instance.get(API_URL);
+        if(response.status === 200){
+          fans.value = response.data.data;
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }
+
+    const delFan = async(fanUsername) => {
+      const API_URL = 'http://localhost:8000/chatRoom/getfan'
+      try{
+        const response = await instance.delete(API_URL,{
+          data:{
+            fan:fanUsername
+          }
+        });
+        if(response.status === 200){
+          alert('移除粉丝成功');
+          fetchFans();
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }
+
+    const delFollow = async(folloUsername) => {
+      const API_URL = 'http://localhost:8000/chatRoom/getfollower';
+      try{
+        const response = await instance.delete(API_URL,{
+          data:{
+            follower:folloUsername
+          }
+        });
+        if(response.status === 200){
+          alert('移除关注成功');
+          fetchFollower();
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }
+
 
     onMounted(async () => {
       await fetchUsername();
@@ -599,6 +643,7 @@
       await fetchAtmessage();
       await fetchFolder();
       await fetchFollower();
+      await fetchFans();
     });
 
     return {
@@ -641,6 +686,8 @@
       getFavor,
       delFavorDialog,
       delFavor,
+      delFan,
+      delFollow,
     };
   },
   methods: {
@@ -815,5 +862,25 @@
 
 .unread {
   font-weight: bold;
+}
+
+.fan-item {
+  display: flex;           
+  align-items: center;     
+  gap: 10px;               
+}
+
+.delFan-btn {
+  margin-right: 10px;      
+}
+
+.follow-item{
+  display: flex;           
+  align-items: center;     
+  gap: 10px; 
+}
+
+.delFollow-btn{
+  margin-right: 10px;     
 }
   </style>

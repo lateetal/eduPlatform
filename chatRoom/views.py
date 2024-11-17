@@ -400,7 +400,9 @@ class FavoriteFolder(APIView):
         )
         return Response({"code": 200, "data": ser.data})
 
-    def post(self,request):
+    def post(self,request,userNo):
+        if userNo != '0':
+            return Response({"code": 400, "message": "无权限新建收藏夹"})
         user_id, user_type = extract_user_info_from_auth(request)
         fname = request.data.get('fname')
         fstatus = request.data.get('fstatus')#可能前端应该是一个按钮
@@ -409,14 +411,18 @@ class FavoriteFolder(APIView):
 
         return Response({"code": 200, "message": "收藏夹创建成功"})
 
-    def delete(self,request):
+    def delete(self,request,userNo):
+        if userNo != '0':
+            return Response({"code": 400, "message": "无权限删除收藏夹"})
         user_id, user_type = extract_user_info_from_auth(request)
         fname = request.data.get('fname')
 
         models.FavoritesFolder.objects.filter(userNo_id=user_id, fname=fname).delete()
         return Response({"code": 200, "data": fname})
 
-    def put(self,request):
+    def put(self,request,userNo):
+        if userNo != '0':
+            return Response({"code": 400, "message": "无权限修改收藏夹"})
         user_id, user_type = extract_user_info_from_auth(request)
         fno = request.data.get('fno')
         fstatus = request.data.get('fstatus')

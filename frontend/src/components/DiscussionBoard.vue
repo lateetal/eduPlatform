@@ -53,7 +53,7 @@
             <button @click="editDiscussion(discussion)" class="edit-btn">编辑</button>
 
             <button @click="folderDialog(discussion)" class="favorite-btn">
-              {{discussion.favor ? '已收藏':'收藏'}}
+              {{discussion.is_favorited ? '已收藏':'收藏'}}
             </button>
 
             <button @click="likeDiscussion(discussion)" class="favorite-btn">
@@ -375,7 +375,7 @@ export default {
       try{
         const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
         if(response.status === 200){
-          folders.value = response.data.data;
+          folders.value = response.data.data.personal_folders;
         }
       }catch(err){
         console.error(err);
@@ -396,6 +396,7 @@ export default {
         });
         if(response.data.code === 200){
           alert('加入收藏夹成功');
+          fetchDiscussions();
         }else if(response.data.code === 400){
           alert('该帖子已在收藏夹中');
         }

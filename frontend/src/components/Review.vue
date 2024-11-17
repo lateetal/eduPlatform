@@ -29,11 +29,11 @@
       <div v-else-if="discussion" class="discussion-item">
         <p class="discussion-content">{{ discussion.dinfo }}</p>
         <div class="discussion-meta">
-          <span class="author" @click="goToUser(discussion.ownerNo)">{{ discussion.ownerName }}</span>
+          <span class="author" @click="goToUser(discussion.ownerName)">{{ discussion.ownerName }}</span>
           <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
           <span class="like_num">点赞数：{{ discussion.like }}</span>
           <button @click="folderDialog(discussion)" class="favorite-btn">
-            {{ discussion.is_favourited ? '已收藏' : '收藏' }}
+            {{ discussion.is_favorited ? '已收藏' : '收藏' }}
           </button>
           <button @click="likeDiscussion(discussion)" class="favorite-btn">
               {{ discussion.is_liked ? '取消点赞' : '点赞' }}
@@ -61,7 +61,7 @@
         <div v-for="comment in filteredReviews" :key="comment.rno" class="discussion-item">
           <p class="discussion-content">{{ comment.rinfo }}</p>
           <div class="discussion-meta">
-            <span class="author" @click="goToUser(comment.ownerNo)">{{ comment.username }}</span>
+            <span class="author" @click="goToUser(comment.username)">{{ comment.username }}</span>
             <span class="post-time">发表于：{{ formatDate(comment.postTime) }}</span>
           </div>
           <p>点赞数：{{ comment.likeNum }}</p>
@@ -130,12 +130,6 @@
             <el-option v-for="folder in folders" :key="folder.fno" :label="folder.fname" :value="folder.fno" />
           </el-select>
         </el-form-item>
-        <!-- <el-form-item v-for="item in favoriteItems" :key="item.name">
-          <el-checkbox v-model="item.checked">
-            {{ item.name }}
-            <span class="item-count">{{ item.count }}</span>
-          </el-checkbox>
-        </el-form-item> -->
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -351,8 +345,8 @@ export default {
       }
     },
 
-    goToUser(userNo){
-      this.router.push(`/user/${userNo}`);
+    goToUser(viewUsername){
+      this.router.push(`/user/${viewUsername}`);
     },
 
     goBack(){
@@ -368,7 +362,7 @@ export default {
       try{
         const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
         if(response.status === 200){
-          this.folders = response.data.data;
+          this.folders = response.data.data.personal_folders;
         }
       }catch(err){
         console.error(err);

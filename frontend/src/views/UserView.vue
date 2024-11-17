@@ -3,7 +3,7 @@
       <header class="header">
         <h1>用户主页</h1>
         <div class="user-info">
-          <button class="btn btn-ghost" @click="followUser">关注</button>
+          <button class="btn btn-ghost" @click="isFollowed?delFollow():followUser()">{{ isFollowed?'已关注':'关注' }}</button>
           <img src="@/assets/avatar.jpg" alt="avatar" class="avatar" />
           <span>{{ id }} ({{ userType === 'student' ? '学生' : '教师' }})</span>
           <button class="btn btn-ghost" @click="goBack">
@@ -47,13 +47,27 @@
   
           <div v-if="selectedTab === 'favorite'" class="person-favorite">
             <h2>收藏夹</h2>
-            <div v-if="favorites.length === 0">该用户没有收藏的帖子。</div>
-            <div v-else>
-              <div v-for="favorite in favorites" :key="favorite.id" class="favorite-item" @click="goToDetail(favorite.dno, favorite.dis_detail.cno)">
-                <h3>{{ favorite.dis_detail.dtitle }}</h3>
-                <p>{{ favorite.dis_detail.dinfo }}</p>
-              </div>
+            <div class="folder-list">
+              <el-collapse v-if="folders.length > 0" accordion>
+                <el-collapse-item v-for="folder in folders" :key="folder.fno" @click="getFavor(folder.fno)">
+                    <template #title>
+                      <span class="folder-name">{{folder.fname}}</span>
+                    </template>
+                  <div>
+                    <ul>
+                      <li v-for="discussion in folderDiscussions" :key="discussion.id" class="discussion-list">
+                        <p>
+                          <button @click="delFavorDialog(discussion)">删除</button>
+                        <span @click="goToDiscussion(discussion.dis_detail)">{{discussion.dis_detail.dtitle}}</span>
+                        </p>
+                      </li>  
+                    </ul>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
+              <span v-else>暂无收藏夹</span>
             </div>
+
           </div>
         </main>
       </div>
@@ -84,16 +98,17 @@
     setup() {
       const router = useRouter();
       const route = useRoute();
-      const favorites = ref([]);
+      const folders = ref([]);
       const id = ref('');
       const name = ref('');
       const mail = ref('');
       const office = ref('');
       const phone = ref('');
       const intro = ref('');
-      const username = ref('');
       const userType = ref('');
       const selectedTab = ref('info');
+      const isFollowed = ref(false);
+      const folderDiscussions = ref([]);
   
       const fetchInfo = async () => {
         try {
@@ -101,7 +116,6 @@
           const response = await instance.get(`${INFO_URL}/${route.params.userId}`);
           if (response.status === 200) {
             const data = response.data.data;
-            username.value = data.username;
             userType.value = data.userType;
             if (data.userType === 'teacher') {
               id.value = data.tno;
@@ -139,6 +153,58 @@
           })
           if(response.status === 200){
             alert('关注成功');
+            fetchIsFollowed();
+          }
+        }catch(err){
+          console.error(err);
+        }
+      }
+      const fetchIsFollowed = async() => {
+        const API_URL = 'http://localhost:8000/chatRoom/getfollower';
+        try{
+          const response = await instance.get(API_URL);
+          if(response.status === 200){
+            isFollowed.value = response.data.data.some(item => item.followedUsername === id.value);
+          }
+        }catch(err){
+          console.error(err);
+        }
+      }
+
+      const delFollow = async() => {
+        const API_URL = 'http://localhost:8000/chatRoom/getfollower';
+        try{
+          const response = await instance.delete(API_URL,{
+            data:{
+              follower:id.value
+            }
+          });
+          if(response.status === 200){
+            alert('取消关注成功');
+            fetchIsFollowed();
+          }
+        }catch(err){
+          console.error(err);
+        }
+      }
+
+      const fetchFolders = async() => {
+        try{
+          const response = await instance.get(`http://localhost:8000/chatRoom/all/folder/${id.value}`);
+          if(response.status === 200){
+            folders.value = response.data.data.personal_folders;
+          }
+        }catch(err){
+          console.error(err);
+        }
+      }
+
+      const getFavor = async(fno) => {
+        const API_URL = `http://localhost:8000/chatRoom/folder/${fno}`;
+        try{
+          const response = await instance.get(API_URL);
+          if(response.status === 200 ){
+            folderDiscussions.value = response.data.data.favorites;
           }
         }catch(err){
           console.error(err);
@@ -147,23 +213,28 @@
   
       onMounted(async () => {
         await fetchInfo();
+        await fetchIsFollowed();
+        await fetchFolders();
       });
   
       return {
-        favorites,
         id,
         name,
         mail,
         office,
         phone,
         intro,
-        username,
         userType,
         selectedTab,
+        folders,
+        isFollowed,
+        folderDiscussions,
 
         goBack,
         handleSelect,
         followUser,
+        delFollow,
+        getFavor,
       };
     },
     methods: {
@@ -249,26 +320,20 @@
     padding: 20px;
   }
   
-  .favorite-item {
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .favorite-item:hover {
-    background-color: #f5f5f5;
-  }
-  
-  .favorite-item h3 {
-    margin: 0 0 5px 0;
-    color: #2563eb;
-  }
-  
-  .favorite-item p {
-    margin: 0;
-    color: #666;
-  }
+  .folder-name {
+  font-size: 18px;
+  width: 200px;
+}
+
+.discussion-list p:hover {
+  color: #4769ff;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.el-collapse-item .el-collapse-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
   </style>
