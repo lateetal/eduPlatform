@@ -287,8 +287,8 @@
   import { School, TopRight, Edit, Delete  } from '@element-plus/icons-vue';
   import axios from 'axios'
   import {ElMessage} from "element-plus";
+  import {getUsernameService} from '@/api/homepage.js'
 
-  const USERNAME_URL = 'http://localhost:8000/homepage/getusername/'
   const INFO_URL = 'http://localhost:8000/home/getinfo/0'
   const UPDATE_URL = 'http://localhost:8000/home/updatePassword'
   const ATMESSAGE_URL = 'http://localhost:8000/chatRoom/atmessage'
@@ -348,18 +348,9 @@
     const otherDiscussions = ref([]);
 
     const fetchUsername = async () => {
-      try {
-        const response = await instance.get(USERNAME_URL);
-        if (response.status === 200) {
-          const { username: fetchedUsername, userType: fetchedUserType } = response.data;
-          username.value = fetchedUsername;
-          userType.value = fetchedUserType;
-        } else {
-          error.value = '获取用户名失败';
-        }
-      } catch (err) {
-        error.value = err.message;
-      }
+      let result = await getUsernameService();
+        username.value = result.data.username;
+        userType.value = result.data.userType;
     };
 
     const fetchInfo = async () => {

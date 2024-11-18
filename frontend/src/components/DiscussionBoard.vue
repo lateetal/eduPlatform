@@ -373,7 +373,7 @@ export default {
 
     const fetchFolder = async () => {
       try{
-        const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
+        const response = await instance.get('http://localhost:8000/chatRoom/all/folder/0');
         if(response.status === 200){
           folders.value = response.data.data.personal_folders;
         }

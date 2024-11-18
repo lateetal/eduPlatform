@@ -2,7 +2,7 @@
   <div class="discussion-board">
     <div class="container">
       <div class="title-container">
-        <h2 class="title">{{ discussion.dtitle }}</h2>
+        <h2 class="title" v-html="highlightHashtags(discussion.dtitle)" @click="handleHashtagClickFromTemplate"></h2>
         <button class="btn btn-ghost" @click="goBack">
           <el-icon><ArrowLeft /></el-icon>
           返回
@@ -27,7 +27,7 @@
 
       <!-- 讨论详情 -->
       <div v-else-if="discussion" class="discussion-item">
-        <p class="discussion-content">{{ discussion.dinfo }}</p>
+        <p class="discussion-content" v-html="highlightHashtags(discussion.dinfo)" @click="handleHashtagClickFromTemplate"></p>
         <div class="discussion-meta">
           <span class="author" @click="goToUser(discussion.ownerName)">{{ discussion.ownerName }}</span>
           <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
@@ -360,7 +360,7 @@ export default {
 
     async fetchFolder(){
       try{
-        const response = await instance.get('http://localhost:8000/chatRoom/all/folder');
+        const response = await instance.get('http://localhost:8000/chatRoom/all/folder/0');
         if(response.status === 200){
           this.folders = response.data.data.personal_folders;
         }
@@ -389,7 +389,27 @@ export default {
       }catch(err){
         console.error(err);
       }
-    }
+    },
+
+    highlightHashtags(text) {
+      if (typeof text !== 'string' || !text) {
+        return ''; 
+      }
+      return text.replace(/#(\S+)(\s|$)/g, '<span class="hashtag" data-hashtag="$1">$&</span>');
+    },
+
+    handleHashtagClickFromTemplate(event) {
+      const target = event.target;
+      if (target.classList.contains('hashtag')) {
+        const hashtag = target.getAttribute('data-hashtag');
+        this.handleHashtagClick(hashtag);
+      }
+    },
+
+
+    handleHashtagClick(hashtag) {
+      alert(`click ${hashtag}`);
+    },
   }
 };
 </script>
@@ -508,10 +528,6 @@ export default {
   transition: box-shadow 0.3s ease;
 }
 
-.discussion-item:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
 .discussion-content {
   color: #34495e;
   margin-bottom: 10px;
@@ -628,5 +644,14 @@ export default {
 
 .submit-btn:hover {
   background-color: #2980b9;
+}
+
+.hashtag {
+  color: blue;
+  cursor: pointer;
+}
+
+.hashtag:hover {
+  text-decoration: underline;
 }
 </style>

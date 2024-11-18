@@ -54,11 +54,11 @@
                       <span class="folder-name">{{folder.fname}}</span>
                       <div class="folder-btn">
                         <span>赞：{{ folder.likeNum }}</span>
-                        <el-button type="primary" @click="favorFolder(folder.fno)">
+                        <el-button type="primary" @click="favorFolder(folder.fno)" v-if="username !== id">
                           {{ isFavored(folder.fno)?'已收藏':'收藏' }}
                         </el-button>
-                        <el-button type="primary" @click="likeFolder(folder.fno)">
-                          点赞
+                        <el-button type="primary" @click="likeFolder(folder)">
+                          {{ folder.is_liked?'已点赞':'点赞' }}
                         </el-button>
                       </div>
                     </template>
@@ -88,6 +88,7 @@
   import { useRouter, useRoute } from 'vue-router';
   import { ArrowLeft } from '@element-plus/icons-vue';
   import axios from 'axios';
+  import {getUsernameService} from '@/api/homepage.js'
   
   const INFO_URL = 'http://localhost:8000/home/getinfo';
   
@@ -119,6 +120,13 @@
       const isFollowed = ref(false);
       const folderDiscussions = ref([]);
       const favoredFolders = ref([]);
+      const username = ref('');
+
+      const fetchUsername = async () => {
+        let result = await getUsernameService();
+        username.value = result.data.username;
+        console.log(username.value);
+      }
       
   
       const fetchInfo = async () => {
@@ -280,13 +288,14 @@
         return false;
       }
 
-      const likeFolder = async(fno) => {
+      const likeFolder = async(folder) => {
         try{
           const response = await instance.post('http://localhost:8000/chatRoom/like/folder',{
-            fno:fno
+            fno:folder.fno
           })
           if(response.status === 200){
-            alert('点赞成功');
+            alert(folder.is_liked?'取消点赞成功':'点赞成功');
+            fetchFolders();
           }
         }catch(err){
           console.log(err);
@@ -298,6 +307,7 @@
         await fetchIsFollowed();
         await fetchFolders();
         await fetchFavoredFolders();
+        await fetchUsername();
       });
   
       return {
@@ -313,6 +323,7 @@
         isFollowed,
         folderDiscussions,
         favoredFolders,
+        username,
 
         goBack,
         handleSelect,

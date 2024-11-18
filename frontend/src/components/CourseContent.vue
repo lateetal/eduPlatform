@@ -25,7 +25,7 @@
           <el-button 
             type="primary"
             @click="$emit('show-homework-dialog')"
-            v-if="selectedTab === 'homework'"
+            v-if="selectedTab === 'homework' && userType === 'teacher'"
           >
             布置作业
           </el-button>
@@ -57,7 +57,7 @@
       <div v-if="selectedTab === 'student'"  class="course-student">
         <ul>
           <li v-for="student in students" :key="student.sno">
-            <h3>{{ student.sno }}</h3>
+            <h3 @click="goToUser(student.sno)" class="student-username">{{ student.sno }}</h3>
             <p>{{ student.sname }}</p>
           </li>
         </ul>
@@ -119,6 +119,7 @@ import CoursePPT from './CoursePPT.vue';
 import { ref } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed';
 import { marked } from 'marked';
+import { useRouter } from 'vue-router';
   
   const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
   const AI_URL = 'http://localhost:8000/homepage/aichat';
@@ -162,6 +163,7 @@ import { marked } from 'marked';
       const chatHistory = ref([]);
       const title = ref('');
       const info = ref('');
+      const router = useRouter();
   
       const getContentTitle = () => {
         switch (props.selectedTab) {
@@ -247,6 +249,10 @@ import { marked } from 'marked';
         info.value = '';
       };
 
+      const goToUser = (sno) => {
+        router.push(`/user/${sno}`);
+      }
+
       return {
         BUCKET_URL,
         chatContainer,
@@ -262,6 +268,7 @@ import { marked } from 'marked';
         convertMarkdown,
         deleteMessage,
         sendMessage,
+        goToUser,
       };
     },
   };
@@ -448,5 +455,11 @@ import { marked } from 'marked';
 
   .course-discussion {
   width: 100%;
+}
+
+.student-username:hover {
+  color: #4769ff; 
+  font-weight: bold; 
+  cursor: pointer;  
 }
   </style>

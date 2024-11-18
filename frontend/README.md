@@ -34,7 +34,7 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 - ~~关注/粉丝back~~   
 - ~~收藏夹分类~~     
 - ~~收藏夹私密/公开~~    
-- 收藏夹点赞    
+- ~~收藏夹点赞~~   
 - ~~@/评论互动消息~~   
 - ~~他人主页~~
 #### 4.课程主页
