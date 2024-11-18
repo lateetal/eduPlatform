@@ -26,8 +26,8 @@
       <div v-else class="discussion-list">
         <div v-for="discussion in paginatedDiscussions" :key="discussion.dno" class="discussion-item">
           <span class="author" @click="goToUser(discussion.ownerName)">{{ discussion.ownerName }}</span>
-          <h3 @click="goToDiscussionDetail(discussion.dno)" class="discussion-title">{{ discussion.dtitle }}</h3>
-          <p @click="goToDiscussionDetail(discussion.dno)" class="discussion-content">{{ discussion.dinfo }}</p>
+          <h3 @click="goToDiscussionDetail(discussion.dno)" class="discussion-title" v-html="highlightHashtags(discussion.dtitle)"></h3>
+          <p @click="goToDiscussionDetail(discussion.dno)" class="discussion-content" v-html="highlightHashtags(discussion.dinfo)"></p>
           <div class="discussion-meta">
             <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
             <span class="like_num">点赞数：{{ discussion.like }}</span>
@@ -442,6 +442,13 @@ export default {
       router.push(`/user/${userNo}`);
     }
 
+    const highlightHashtags = (text) => {
+      if (typeof text !== 'string' || !text) {
+        return ''; 
+      }
+      return text.replace(/#(\S+)(\s|$)/g, '<span class="hashtag" data-hashtag="$1">$&</span>');
+    };
+
     onMounted(() => {
       initOSSClient();
       fetchDiscussions();
@@ -482,6 +489,7 @@ export default {
       folderDialog,
       clearFolderDialog,
       handleFavor,
+      highlightHashtags,
     };
   }
 
@@ -776,4 +784,10 @@ export default {
 .pagination span {
   margin: 0 10px;
 }
+
+.hashtag {
+  color: blue;
+  cursor: pointer;
+}
+
 </style>

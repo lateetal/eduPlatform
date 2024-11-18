@@ -406,9 +406,8 @@ export default {
       }
     },
 
-
     handleHashtagClick(hashtag) {
-      alert(`click ${hashtag}`);
+      this.router.push(`/${this.courseNo}/showtopic/${hashtag}`);
     },
   }
 };

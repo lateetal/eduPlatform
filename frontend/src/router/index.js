@@ -6,6 +6,7 @@ import CoursePage from "@/views/CoursePage.vue";
 import Review from "@/components/Review.vue"
 import PersonalHome from "@/views/PersonalHome.vue";
 import UserView from "@/views/UserView.vue";
+import TopicPage from "@/views/TopicPage.vue";
 
 
 const routes = [
@@ -47,6 +48,11 @@ const routes = [
       path:"/user/:userId",
       name:"UserView",
       component:UserView
+    },
+    {
+      path:"/:courseNo/showtopic/:topicTitle",
+      name:"TopicPage",
+      component:TopicPage,
     },
 ];
 

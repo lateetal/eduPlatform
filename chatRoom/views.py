@@ -545,7 +545,7 @@ class otherfolder(APIView):
 #展示对应话题下的讨论
 class showTopic(APIView):
     def get(self, request, course_id):
-        topic_name = request.data.get('topic')  # 获取请求中的话题
+        topic_name = request.GET.get('topic')  # 获取请求中的话题
         try:
             course = Course.objects.get(cno=course_id)  # 假设你有 Course 模型，并且 course_id 对应 cno
         except Course.DoesNotExist:

@@ -125,7 +125,6 @@
       const fetchUsername = async () => {
         let result = await getUsernameService();
         username.value = result.data.username;
-        console.log(username.value);
       }
       
   
