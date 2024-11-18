@@ -59,7 +59,7 @@ def extract_user_info_from_auth(request):
     except jwt.InvalidTokenError:
         raise AuthenticationFailed('Invalid token.')
 
-# Create your views here.
+
 class StudentHomePageView(APIView):
     def get(self, request):
 
@@ -818,7 +818,7 @@ class MutualAssessmentView(APIView):
         AssignmentSubmission.save()
         return Response({'message': '评分成功'}, status=status.HTTP_200_OK)
 
-#课程日历和大纲的上传和下载
+#课程日历和大纲的上传(下载在前端）
 class uploadInfoFileView(APIView):
     def post(self, request, course_id, file_type):
         uploaded_file = request.FILES.get('file')

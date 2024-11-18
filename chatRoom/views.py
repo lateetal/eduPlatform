@@ -381,11 +381,13 @@ class AtMessageView(APIView):
 
 #用户看他人也通过这个接口来找，根据status来决定展示与否
 class FavoriteFolder(APIView):
-    def get(self,request,userNo):
-        if userNo == '0':
+    def get(self,request,username):
+        get_user_id, user_type = extract_user_info_from_auth(request)# 保存当前进行查看操作的用户id
+
+        if username == '0':
             user_id, user_type = extract_user_info_from_auth(request)
         else:
-            user_id = userNo
+            user_id = User.objects.get(username=username).id
 
         # 获取当前用户的个人收藏夹
         personal_folders = FavoritesFolder.objects.filter(userNo_id=user_id)
@@ -396,12 +398,12 @@ class FavoriteFolder(APIView):
         # 创建序列化器实例，传递查询集和上下文
         ser = ComprehensiveFloderSerializer(
             instance={'personal_folders': personal_folders, 'others_folders': others_folders},
-            context={'user_id': user_id}
+            context={'user_id': user_id,'get_user_id':get_user_id}
         )
         return Response({"code": 200, "data": ser.data})
 
-    def post(self,request,userNo):
-        if userNo != '0':
+    def post(self,request,username):
+        if username != '0':
             return Response({"code": 400, "message": "无权限新建收藏夹"})
         user_id, user_type = extract_user_info_from_auth(request)
         fname = request.data.get('fname')
@@ -411,8 +413,8 @@ class FavoriteFolder(APIView):
 
         return Response({"code": 200, "message": "收藏夹创建成功"})
 
-    def delete(self,request,userNo):
-        if userNo != '0':
+    def delete(self,request,username):
+        if username != '0':
             return Response({"code": 400, "message": "无权限删除收藏夹"})
         user_id, user_type = extract_user_info_from_auth(request)
         fname = request.data.get('fname')
@@ -420,8 +422,8 @@ class FavoriteFolder(APIView):
         models.FavoritesFolder.objects.filter(userNo_id=user_id, fname=fname).delete()
         return Response({"code": 200, "data": fname})
 
-    def put(self,request,userNo):
-        if userNo != '0':
+    def put(self,request,username):
+        if username != '0':
             return Response({"code": 400, "message": "无权限修改收藏夹"})
         user_id, user_type = extract_user_info_from_auth(request)
         fno = request.data.get('fno')
@@ -573,6 +575,9 @@ class followerView(APIView):
         user_id, user_type = extract_user_info_from_auth(request)
         follower = request.data.get('follower')
         follower_id = User.objects.get(username=follower).id
+        if follower_id == user_id:
+            return Response({"code": 403, "message":"不能关注自己"})
+
         Follow.objects.create(followed_id=follower_id, fan_id=user_id)
 
         return Response({"code": 200, "message":"关注成功"})

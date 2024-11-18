@@ -162,9 +162,11 @@
           const response = await instance.post(API_URL,{
             follower:id.value
           })
-          if(response.status === 200){
+          if(response.data.code === 200){
             alert('关注成功');
             fetchIsFollowed();
+          }else if(response.data.code === 403){
+            alert('不能关注自己');
           }
         }catch(err){
           console.error(err);

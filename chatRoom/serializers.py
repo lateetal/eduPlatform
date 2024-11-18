@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 import chatRoom
 from chatRoom.models import Discussion, Review, PictureDisscussion, PictureReview, Favorite, atMessage, FavoritesFolder, \
-    DiscussionLike, Follow, FavoritesFolderOfOthers
+    DiscussionLike, Follow, FavoritesFolderOfOthers, FavoritesFolderLike
 from homepage.models import Student, Teacher
 from login.models import User
 
@@ -159,32 +159,48 @@ class AtMessageSerializer(serializers.ModelSerializer):
         cno = Discussion.objects.get(dno=dno).cno_id
         return cno
 
-#个人收藏夹序列化器
+# 个人收藏夹序列化器
 class FloderSerializer(serializers.ModelSerializer):
+    is_liked = serializers.SerializerMethodField()
+
     class Meta:
         model = FavoritesFolder
         fields = '__all__'
+
+    def get_is_liked(self, obj):
+        user_id = self.context.get('get_user_id')
+        if user_id:
+            # 检查当前用户是否点赞了这个收藏夹
+            return FavoritesFolderLike.objects.filter(fno=obj, userNo_id=user_id).exists()
+        return False
+
 
 # 他人的收藏夹序列化器
 class FavoritesFolderOfOthersSerializer(serializers.ModelSerializer):
     fname = serializers.SerializerMethodField()
     ownerName = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = FavoritesFolderOfOthers
-        fields = ('fno', 'fname', 'ownerName')
+        fields = ('fno', 'fname', 'ownerName', 'is_liked')
 
     def get_fname(self, obj):
         # 直接访问外键字段 fno 的属性
-        # 假设 fno 是外键，直接访问 fno 对象的 fname 属性
         return obj.fno.fname if obj.fno else None
 
     def get_ownerName(self, obj):
-        # 通过 fno 访问关联的 userNo 外键的属性
-        # 假设 fno 是外键，且 fno 对象有 userNo 外键指向 User
         if obj.fno and obj.fno.userNo:
             return obj.fno.userNo.username
         return None
+
+    def get_is_liked(self, obj):
+        user_id = self.context.get('get_user_id')
+        if user_id:
+            # 检查当前用户是否点赞了这个收藏夹
+            return FavoritesFolderLike.objects.filter(fno=obj.fno, userNo_id=user_id).exists()
+        return False
+
 
 # 综合序列化器，处理个人收藏夹和他人收藏夹的情况
 class ComprehensiveFloderSerializer(serializers.Serializer):
@@ -192,16 +208,17 @@ class ComprehensiveFloderSerializer(serializers.Serializer):
     others_folders = FavoritesFolderOfOthersSerializer(many=True)  # 他人的收藏夹
 
     def to_representation(self, instance):
-        # 获取当前用户
+        # 获取当前用户和目标用户的ID
         user_id = self.context.get('user_id')
+        get_user_id = self.context.get('get_user_id')
 
         # 获取当前用户的个人收藏夹
         personal_folders = FavoritesFolder.objects.filter(userNo_id=user_id)
-        personal_folders_serializer = FloderSerializer(personal_folders, many=True, context={'user_id': user_id})
+        personal_folders_serializer = FloderSerializer(personal_folders, many=True, context={'user_id': user_id, 'get_user_id': get_user_id})
 
         # 获取他人的收藏夹
         others_folders = FavoritesFolderOfOthers.objects.filter(collector_id=user_id)
-        others_folders_serializer = FavoritesFolderOfOthersSerializer(others_folders, many=True)
+        others_folders_serializer = FavoritesFolderOfOthersSerializer(others_folders, many=True, context={'get_user_id': get_user_id})
 
         return {
             'personal_folders': personal_folders_serializer.data,
