@@ -13,10 +13,10 @@
         :courseNo="courseNo"
         :messages="messages"
         :students="students"
+        :homeworks="homeworks"
         @show-edit-dialog="showEditDialog"
         @show-upload-dialog="showUploadDialog"
         @show-new-folder-dialog="newFolderDialogVisible = true"
-        @show-homework-dialog="showHomeworkDialog"
         @delete-message="deleteMessage"
         @send-message="sendMessage"
       />
@@ -95,6 +95,7 @@ import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { assignmentListService } from '@/api/homepage.js';
 
 // optional styles
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
@@ -137,6 +138,7 @@ export default {
     const students = ref([]);
     const newFolderDialogVisible = ref(false);
     const newFolderName = ref('');
+    const homeworks = ref([]);
 
     const fetchUsername = async () => {
         try {
@@ -289,8 +291,9 @@ export default {
       }
     };
 
-    const showHomeworkDialog = () =>{
-      console.log('publish homework')
+    const fetchHomeworks = async () => {
+      let result = await assignmentListService(courseNo);
+      homeworks.value = result.data.data;
     }
 
     onMounted(() => {
@@ -298,6 +301,7 @@ export default {
       fetchCourseData();
       fetchMessages();
       fetchAllStudent();
+      fetchHomeworks();
     });
 
     watch(() => selectedTab.value, (newTab) => {
@@ -332,7 +336,7 @@ export default {
       deleteMessage,
       sendMessage,
       courseNo,
-      showHomeworkDialog,
+      homeworks,
     };
   },
 };

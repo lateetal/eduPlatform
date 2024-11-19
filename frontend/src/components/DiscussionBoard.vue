@@ -122,7 +122,7 @@
       v-model="folderDialogVisible"
       width="50%"
     >
-      <el-form :model="folderForm">
+      <el-form>
         <el-form-item label="标题">
           <span>{{ favorDiscussion.dtitle }}</span>
         </el-form-item>
