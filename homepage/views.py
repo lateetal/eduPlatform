@@ -1,6 +1,8 @@
+from datetime import datetime
 import random
 import time
 import oss2
+from boto3 import resource
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.utils import timezone
@@ -14,13 +16,12 @@ from rest_framework.views import APIView
 from eduPlatform import settings
 from login.models import User
 from . import models
-from .models import ChooseClass, Course, CourseMessage, Teacher, CourseMessageStatus, CourseResource, Assignment, \
-    AssignmentSubmission, Student, Question, Folder, CourseResource_test, CourseResource_ppt, MutualAssessment
+from .models import ChooseClass, Course, CourseMessage, Teacher, CourseMessageStatus, Assignment, AssignmentSubmission, Student, Question, Folder, CourseResource_test, CourseResource_ppt, MutualAssessment
 from chatRoom.models import Favorite
 from .serializers import courseSerializer, courseDetailSerializer, CourseMessageSerializer, \
     CourseMessageStatusSerializer, StudentSerializer, AssignmentSerializer, \
     AssignmentSubmissionSerializer, QuestionSerializer, CourseResourceSerializer_test, CourseResourceSerializer_ppt, \
-    TeacherAssignmentSerializer
+    TeacherAssignmentSerializer, courseResource_pptSerializer, FolderSerializer
 from chatRoom.serializers import FavoriteSerializer
 
 from zhipuai import ZhipuAI
@@ -264,85 +265,102 @@ class AllStudent(APIView):
 
 #lzy部分
 # 课程资源列表视图
-# class CourseResourceListView(APIView):
-#     def get(self, request, course_id):
-#         try:
-#             # 使用课程ID获取对应的课程
-#             course = models.Course.objects.get(cno=course_id)
-#             # 获取关联的课程资源
-#             resources = models.CourseResource.objects.filter(cname_id=course)
-#             if not resources.exists():
-#                 return Response({'message': 'No resources found for this course'}, status=status.HTTP_404_NOT_FOUND)
-#
-#             # 序列化课程资源
-#             serializer = CourseResourceSerializer(resources, many=True)
-#             return Response({'code': 200, 'data': serializer.data})
-#         except models.Course.DoesNotExist:
-#             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-#
-#
-# # 教师上传资源视图 实现上传和删除
-# class UploadResourceView(APIView):
-#     permission_classes = [IsAuthenticated]  # 确保只有经过身份验证的用户可以上传资源
-#
-#     def post(self, request, course_id):
-#         try:
-#             user_id, user_type = extract_user_info_from_auth(request)
-#             # 获取对应的课程
-#             course = models.Course.objects.get(cno=course_id)
-#
-#             # 检查用户权限，确保是教师用户
-#             try:
-#                 tno = User.objects.get(pk=user_id).username
-#                 teacher = models.Teacher.objects.get(tno=tno)  # 使用教师工号作为用户ID
-#             except models.Teacher.DoesNotExist:
-#                 return Response({'error': 'Only teachers can upload resources.'}, status=status.HTTP_403_FORBIDDEN)
-#
-#             # 解析表单数据
-#             resource_name = request.data.get('resource_name', '')
-#             resource_description = request.data.get('resource_description', '')
-#             resource_file = request.FILES.get('resource_file', None)
-#
-#             # 如果有文件，上传到阿里云OSS
-#             if resource_file:
-#                 try:
-#                     file_name = f"course/resources/{course_id}/{resource_file.name}"
-#                     bucket.put_object(file_name, resource_file)  # 确保 bucket 是正确初始化的
-#                     file_path = file_name  # 生成 OSS 中的文件路径
-#                 except Exception as e:
-#                     print(f"OSS upload failed: {str(e)}")  # 打印详细错误信息
-#                     return Response({'error': f'File upload failed: {str(e)}'},
-#                                     status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#             else:
-#                 return Response({'error': 'No file uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
-#
-#             # 创建新的课程资源记录
-#             resource = models.CourseResource.objects.create(
-#                 cname=course,
-#                 rname=resource_name,
-#                 rdesc=resource_description,
-#                 rfile=file_path
-#             )
-#             resource.save()
-#
-#             return Response({'message': 'Resource uploaded successfully!', 'resource_id': resource.rno},
-#                             status=status.HTTP_201_CREATED)
-#
-#         except models.Course.DoesNotExist:
-#             return Response({'error': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
-#         except Exception as e:
-#             return Response({'error': f'An unexpected error occurred: {str(e)}'},
-#                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#     def delete(self,request, course_id):
-#         # 没写用户身份验证，靠前端
-#         rno = request.data.get('rno', None)
-#         #删除阿里云oss文件
-#         file_path = CourseResource.objects.get(pk=rno).rfile
-#         bucket.delete_object(file_path)
-#         CourseResource.objects.get(pk=rno).delete()
-#
-#
-#         return Response({'code': 200, 'message': '课程资源文件删除成功' })
+#前端要能够返回当前选中的文件夹路径
+class ResourseFolder(APIView):
+    def get(self, request, course_id):
+        # 获取当前课程的文件夹
+        try:
+            folder = Folder.objects.get(cno=course_id,folderPathInSql='/')
+        except Folder.DoesNotExist:
+            return Response({"detail": "Folder not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 返回该文件夹以及它的子文件夹和文件资源
+        folder_data = FolderSerializer(folder).data
+        return Response(folder_data, status=status.HTTP_200_OK)
+
+    def post(self, request, course_id):#新建文件夹
+        folderPath = request.data.get('folderPath')
+        folderName = request.data.get('folderName')
+
+        Folder.objects.create(folder_name = folderName, cno_id = course_id, folderPathInSql = folderPath)
+
+        return Response({'code': 200,'message':'文件夹创建成功'})
+
+    def delete(self, request, course_id):
+        folderId = request.data.get('folderId')
+        folder = Folder.objects.get(pk=folderId)
+        folder_path_in_sql = folder.folderPathInSql + str(folder.pk)
+        Folder.objects.filter(folderPathInSql__startswith=folder_path_in_sql).delete()
+        folder.delete()
+        #把对应子文件夹以及子文件删除
+        return Response({'code': 200,'message':'文件夹删除成功'})
+
+class ResourseFile(APIView):
+    def get(self, request, course_id):
+        rno = request.GET.get('rno')
+        resource = CourseResource_ppt.objects.get(pk=rno)
+        ser = courseResource_pptSerializer(resource)
+        return Response({"code": 200, "data": ser.data})  # 返回选中文件夹的下面有的内容
+
+    def post(self, request, course_id):
+        folderPath = request.data.get('folderPath')  #文件夹的主键
+        rname = request.data.get('rname')  # 文件名称
+        resourceFile = request.FILES.get('resourceFile', None)
+
+        # 如果有文件，上传到阿里云OSS
+        if resourceFile:
+            try:
+                # 使用当前时间戳生成唯一的文件名
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")  # 获取当前的精确时间戳
+                file_extension = resourceFile.name.split('.')[-1]  # 获取文件的扩展名
+                file_name = f"course/resources/{course_id}/{timestamp}.{file_extension}"  # 生成文件名
+
+                # 上传文件到阿里云OSS
+                bucket.put_object(file_name, resourceFile)  # 确保 bucket 是正确初始化的
+                file_path = file_name  # 生成 OSS 中的文件路径
+            except Exception as e:
+                print(f"OSS upload failed: {str(e)}")  # 打印详细错误信息
+                return Response({'error': f'File upload failed: {str(e)}'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({'error': 'No file uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 获取文件夹对象
+        folder = Folder.objects.get(pk=folderPath)
+
+        # 创建数据库记录
+        resource = models.CourseResource_ppt.objects.create(
+            cname_id=course_id,
+            rname=rname,
+            rfileInSql=folder,
+            rfileInOSS=file_path,
+            upload_time=timezone.now(),
+        )
+
+        resource.save()
+
+        return Response({'message': 'Resource uploaded successfully!', 'resource_id': resource.rno},
+                        status=status.HTTP_201_CREATED)
+
+    def delete(self, request, course_id):
+        rno = request.data.get('rno')  # 获取要删除的资源记录ID
+        try:
+            resource = models.CourseResource_ppt.objects.get(rno=rno, cname_id=course_id)
+            file_path = resource.rfileInOSS
+
+            # 删除阿里云OSS中的文件
+            try:
+                bucket.delete_object(file_path)  # 假设使用 `delete_object` 方法删除OSS文件
+            except Exception as e:
+                print(f"OSS delete failed: {str(e)}")
+                return Response({'error': f'Failed to delete file from OSS: {str(e)}'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            resource.delete()
+            return Response({'message': 'Resource deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+
+        except ObjectDoesNotExist:
+            return Response({'error': 'Resource not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 # 作业列表视图
 class AssignmentListView(APIView):

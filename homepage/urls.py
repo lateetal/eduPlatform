@@ -31,7 +31,9 @@ urlpatterns = [
     path('<str:assignment_id>/mutualAssessment',views.MutualAssessmentView.as_view(),name='mutualAssessment'),
     #课程资源部分
     # path('course/<str:course_id>/resources_ppt/',views.CourseResourceListView_ppt.as_view(), name='resources_ppt'),
-    path('course/<str:course_id>/resources_test/',views.CourseResourceListView_test.as_view(), name='resources_ppt'),
+    path('course/<str:course_id>/resources_folder',views.ResourseFolder.as_view(),name='resources_folder'),
+    path('course/<str:course_id>/resources_file',views.ResourseFile.as_view(),name='resources_file'),
+    path('course/<str:course_id>/resources_test/',views.CourseResourceListView_test.as_view(), name='resources_test'),
     path('course/<str:course_id>/resources_question/',views.CourseQuestionListView.as_view(), name='resources_question'),
     path('course/<str:course_id>/resources_question/<str:questionType>',views.CourseQuestionListView.as_view(), name='resources_question'),
 

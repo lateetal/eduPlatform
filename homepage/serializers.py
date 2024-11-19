@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student, CourseResource, Assignment, \
+from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student, Assignment, \
     AssignmentSubmission, Folder, CourseResource_ppt, CourseResource_test, Question, TeacherAssignment
 
 
@@ -109,3 +109,28 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
             'submitted_at', 'delay_time', 'grade'
         ]
         read_only_fields = ['student_id', 'student_name', 'submission_text', 'submission_file', 'submitted_at', 'delay_time', 'grade']
+
+#课程文件序列化
+class courseResource_pptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseResource_ppt
+        fields = '__all__'
+
+#文件夹序列化
+class FolderSerializer(serializers.ModelSerializer):
+    # 文件夹中的资源，使用 courseResource_pptSerializer 进行序列化
+    resources = serializers.SerializerMethodField()  # 文件夹下的资源
+    subfolders = serializers.SerializerMethodField()  # 子文件夹
+
+    class Meta:
+        model = Folder
+        fields = ['id', 'folder_name', 'folderPathInSql', 'resources', 'subfolders']
+
+    def get_resources(self, obj):
+        resources = CourseResource_ppt.objects.filter(rfileInSql=obj)
+        return courseResource_pptSerializer(resources, many=True).data
+
+    def get_subfolders(self, obj):
+        subfolder_path_prefix = f"{obj.folderPathInSql}{obj.id}/"  # 构建子文件夹路径前缀
+        subfolders = Folder.objects.filter(folderPathInSql=subfolder_path_prefix)
+        return FolderSerializer(subfolders, many=True).data

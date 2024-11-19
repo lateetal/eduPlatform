@@ -49,26 +49,6 @@ class CourseMessageStatus(models.Model):
     cno = models.ForeignKey('Course', on_delete = models.CASCADE)
     status = models.BooleanField(default = False)
 
-#lzy部分课程资源等
-class CourseResource(models.Model):
-    rno = models.AutoField(primary_key=True)  # 资源编号
-    cname = models.ForeignKey(Course, on_delete=models.CASCADE)  # 关联课程
-    rname = models.CharField(max_length=100)  # 资源名称
-    rdesc = models.CharField(max_length=500, blank=True, null=True)  # 资源描述
-    rfile = models.CharField(max_length=200)  # 资源文件地址（存储在OSS）
-    upload_time = models.DateTimeField(auto_now_add=True)  # 上传时间
-
-    def __str__(self):
-        return self.rname
-
-class ResourceProgress(models.Model):
-    student = models.ForeignKey('Student', on_delete=models.CASCADE)  # 学生
-    resource = models.ForeignKey(CourseResource, on_delete=models.CASCADE)  # 课程资源
-    progress = models.CharField(max_length=100)  # 记录进度，可能是时间戳或页码，具体根据文件类型
-
-    def __str__(self):
-        return f"{self.student.username} - {self.resource.rname} - {self.progress}"
-
 #留的作业
 class Assignment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)  # 关联的课程
@@ -131,21 +111,22 @@ class TeacherAssignment(models.Model):
 # 文件夹
 class Folder(models.Model):
     folder_name = models.CharField(max_length=100)  # 文件夹名称
-    folder_desc = models.CharField(max_length=500, blank=True, null=True)  # 文件夹描述
+    cno = models.ForeignKey('Course', on_delete=models.CASCADE,default='0001')#文件夹所属课程
+    folderPathInSql = models.CharField(max_length=500, blank=True, null=True, default="NULL")  # 存储文件夹的地址 类似1/2/3
 
     def __str__(self):
         return self.folder_name
 
 
-# 课件
+# 课件/课程资源
 class CourseResource_ppt(models.Model):
     rno = models.AutoField(max_length=10, primary_key=True)  # 资源编号
     cname = models.ForeignKey(Course, on_delete=models.CASCADE)  # 关联课程
     rname = models.CharField(max_length=100)  # 资源名称
-    rdesc = models.CharField(max_length=500, blank=True, null=True)  # 资源描述
-    rfile = models.CharField(max_length=200)  # 资源文件地址（存储在OSS）
+    rfileInSql = models.ForeignKey('Folder',on_delete=models.CASCADE,default='1')# 存储文件资源及其地址 类似1/2/3
+    rfileInOSS = models.CharField(max_length=200)  # 资源文件地址（存储在OSS）
     upload_time = models.DateTimeField(auto_now_add=True)  # 上传时间
-    folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, blank=True, null=True)  # 关联文件夹
+
 
     def __str__(self):
         return self.rname
