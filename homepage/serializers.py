@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from homepage.models import Teacher, Course, CourseMessage, CourseMessageStatus, Student, Assignment, \
-    AssignmentSubmission, Folder, CourseResource_ppt, CourseResource_test, Question, TeacherAssignment
+    AssignmentSubmission, Folder, CourseResource_ppt, CourseResource_test, Question, TeacherAssignment, ChooseClass
 
 
 class courseSerializer(serializers.Serializer):
@@ -84,9 +84,19 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AssignmentSerializer(serializers.ModelSerializer):
+    studentNum = serializers.SerializerMethodField()
+    submitNum = serializers.SerializerMethodField()
+
     class Meta:
         model = Assignment
         fields = '__all__'
+    def get_studentNum(self, obj):
+        studentNum = ChooseClass.objects.filter(cno_id=obj.course_id).count()
+        return studentNum
+    def get_submitNum(self, obj):
+        submitNum = AssignmentSubmission.objects.filter(assignment_id=obj.pk).count()
+        return submitNum
+
 
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
