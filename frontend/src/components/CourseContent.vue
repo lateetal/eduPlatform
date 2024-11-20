@@ -68,13 +68,8 @@
   
       <div v-if="selectedTab === 'homework'" class="course-homework">
         <HomeworkList
-          :homeworks="homeworks" 
           :courseNo="courseNo"
           :userType="userType"
-          @add-homework="handleAddHomework"
-          @view-homework="handleViewHomework"
-          @edit-homework="handleEditHomework"
-          @delete-homework="handleDeleteHomework"
         />
       </div>
       
@@ -158,10 +153,6 @@ import HomeworkList from './HomeworkList.vue';
         type: Array,
         required: true,
       },
-      homeworks:{
-        type: Array,
-        required: true,
-      }
     },
     emits: ['show-edit-dialog', 'show-upload-dialog', 'show-new-folder-dialog', 'delete-message', 'send-message'],
     setup(props, { emit }) {
@@ -260,30 +251,6 @@ import HomeworkList from './HomeworkList.vue';
         router.push(`/user/${sno}`);
       }
 
-      const handleAddHomework = (homework) => {
-        // 处理添加作业的逻辑
-        console.log('Adding homework:', homework);
-        // 这里你可能需要调用一个API来保存新的作业
-      };
-
-      const handleViewHomework = (homework) => {
-        // 处理查看作业的逻辑
-        console.log('Viewing homework:', homework);
-        // 这里你可能需要导航到一个作业详情页面
-      };
-
-      const handleEditHomework = (homework) => {
-        // 处理编辑作业的逻辑
-        console.log('Editing homework:', homework);
-        // 这里你可能需要打开一个编辑作业的对话框
-      };
-
-      const handleDeleteHomework = (homework) => {
-        // 处理删除作业的逻辑
-        console.log('Deleting homework:', homework);
-        // 这里你可能需要调用一个API来删除作业，然后更新本地状态
-      };
-
 
       return {
         BUCKET_URL,
@@ -301,10 +268,6 @@ import HomeworkList from './HomeworkList.vue';
         deleteMessage,
         sendMessage,
         goToUser,
-        handleAddHomework,
-        handleViewHomework,
-        handleEditHomework,
-        handleDeleteHomework,
       };
     },
   };

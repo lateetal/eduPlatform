@@ -1,24 +1,28 @@
 <template>
     <div class="homework-container">
       <div class="header">
-        <el-button v-if="userType==='teacher'" type="primary" @click="dialogVisible = true">布置作业</el-button>
+        <el-button v-if="userType==='teacher'" type="primary" @click="dialogTitle='布置作业';dialogVisible = true">布置作业</el-button>
       </div>
   
       <div class="table-container">
         <el-table :data="homeworks" style="width: 100%">
-          <el-table-column type="selection" width="55" />
-          <el-table-column prop="title" label="作业标题" />
-          <el-table-column prop="start_date" label="发布时间" width="180" />
+          <el-table-column prop="title" label="作业标题" width="200"/>
+          <el-table-column label="提交人数" width="100">
+            <template #default="scope">
+              {{ scope.row.submitNum }} / {{ scope.row.studentNum }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="start_date" label="开始时间" width="180" />
           <el-table-column prop="due_date" label="截止时间" width="180" />
           <el-table-column label="操作" width="250" fixed="right">
-            <template #default="scope">
-              <el-button type="primary" link @click="$emit('view-homework', scope.row)">
-                查看详情
+            <template  v-if="userType==='teacher'" #default="scope">
+              <el-button type="primary" link @click="publicGrade(scope.row)">
+                公布成绩
               </el-button>
-              <el-button type="primary" link @click="$emit('edit-homework', scope.row)">
+              <el-button type="primary" link @click="editAssignment(scope.row)">
                 编辑
               </el-button>
-              <el-button type="danger" link @click="$emit('delete-homework', scope.row)">
+              <el-button type="danger" link @click="delAssignment(scope.row.id)">
                 删除
               </el-button>
             </template>
@@ -29,7 +33,7 @@
       <!-- 布置作业对话框 -->
       <el-dialog
         v-model="dialogVisible"
-        title="布置作业"
+        :title="dialogTitle"
         width="50%"
         :before-close="handleClose"
       >
@@ -45,24 +49,57 @@
               placeholder="请输入作业描述"
             />
           </el-form-item>
-          <el-form-item label="截止日期">
+
+          <el-form-item label="开始日期">
             <el-date-picker
-              v-model="homeworkForm.deadline"
-              type="datetime"
-              placeholder="选择截止日期"
+              v-model="homeworkForm.start_date"
+              type="date"
+              placeholder="选择开始日期"
+              format="YYYY/MM/DD"
+              value-format="YYYY-MM-DD"
             />
           </el-form-item>
-          <el-form-item label="班次">
-            <el-select v-model="homeworkForm.class" placeholder="请选择班次">
-              <el-option label="G27" value="G27" />
-              <el-option label="G28" value="G28" />
-            </el-select>
+
+          <el-form-item label="截止日期">
+            <el-date-picker
+              v-model="homeworkForm.due_date"
+              type="date"
+              placeholder="选择截止日期"
+              format="YYYY/MM/DD"
+              value-format="YYYY-MM-DD"
+            />
+          </el-form-item>
+
+          <el-form-item label="学生互评">
+            <el-switch v-model="homeworkForm.isMutualAssessment" />
+          </el-form-item>
+
+          <el-form-item label="允许逾期提交">
+            <el-switch v-model="homeworkForm.allowDelaySubmission" />
+          </el-form-item>
+
+          <el-form-item label="满分">
+            <el-input-number v-model="homeworkForm.maxGrade" :min="1" :max="100" />
+          </el-form-item>
+
+          <el-form-item label="选择文件">
+            <el-upload
+              class="upload-demo"
+              action="#"
+              :on-change="handleFileChange"
+              :auto-upload="false"
+            >
+              <el-button type="primary">上传附件</el-button>
+              <template #tip>
+                <div class="el-upload__tip">只能上传pdf文件</div>
+              </template>
+            </el-upload>
           </el-form-item>
         </el-form>
         <template #footer>
           <span class="dialog-footer">
             <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="handleSubmit">
+            <el-button type="primary" @click="addAssignment">
               确认
             </el-button>
           </span>
@@ -72,13 +109,13 @@
   </template>
   
   <script setup>
-  import { ref, reactive } from 'vue'
+  import { ref } from 'vue';
+  import { ElMessage } from 'element-plus';
+  import { assignmentListService,
+          assignmentAddService,
+          assignmentDeleteService } from '@/api/homepage';
   
   const props = defineProps({
-    homeworks: {
-      type: Array,
-      required: true
-    },
     courseNo: {
       type: String,
       required: true
@@ -89,25 +126,104 @@
     }
   })
   
-  const emit = defineEmits(['add-homework', 'view-homework', 'edit-homework', 'delete-homework'])
-  
   const dialogVisible = ref(false)
-  const homeworkForm = reactive({
+  const homeworks = ref([]);
+  const homeworkForm = ref({
     title: '',
     description: '',
-    deadline: '',
-    class: ''
-  })
-  
-  const handleClose = () => {
-    dialogVisible.value = false
+    start_date: '',
+    due_date: '',
+    assignment_file: '',
+    isMutualAssessment: false,
+    allowDelaySubmission: false,
+    maxGrade: 100,
+  });
+  const uploadForm = ref({ file: null });
+  const dialogTitle = ref('');
+
+  const fetchHomeworks = async () => {
+    try{
+      let result = await assignmentListService(props.courseNo);
+      if(result.status === 200){
+        homeworks.value = result.data.data;
+      } else if(result.status === 404){
+        homeworks.value = [];
+      }
+      
+    } catch(err){
+      console.log(err);
+    }   
+  }
+
+  fetchHomeworks();
+
+  const clearHomeworkForm = () => {
+    homeworkForm.value = {
+      title: '',
+      description: '',
+      start_date: '',
+      due_date: '',
+      assignment_file: '',
+      isMutualAssessment: false,
+      allowDelaySubmission: false,
+      maxGrade: 100,
+    };
   }
   
-  const handleSubmit = () => {
-    emit('add-homework', { ...homeworkForm, courseNo: props.courseNo })
-    dialogVisible.value = false
-    // Reset form
-    Object.keys(homeworkForm).forEach(key => homeworkForm[key] = '')
+  const handleClose = () => {
+    dialogVisible.value = false;
+    clearHomeworkForm();
+  }
+  
+  const addAssignment = async () => {
+    try {
+      if(homeworkForm.value.isMutualAssessment){
+        homeworkForm.value.isMutualAssessment = 1;
+      } else {
+        homeworkForm.value.isMutualAssessment = 0;
+      }
+
+      if(homeworkForm.value.allowDelaySubmission){
+        homeworkForm.value.allowDelaySubmission = 1;
+      } else {
+        homeworkForm.value.allowDelaySubmission = 0;
+      }
+      const formData = new FormData()
+      formData.append('title', homeworkForm.value.title)
+      formData.append('description', homeworkForm.value.description)
+      formData.append('start_date', homeworkForm.value.start_date)
+      formData.append('due_date', homeworkForm.value.due_date)
+      formData.append('isMutualAssessment', homeworkForm.value.isMutualAssessment)
+      formData.append('allowDelaySubmission', homeworkForm.value.allowDelaySubmission)
+      formData.append('maxGrade', homeworkForm.value.maxGrade)
+      formData.append('assignment_file', uploadForm.value.file);
+
+      const result = await assignmentAddService(props.courseNo, formData)
+
+      if (result.status === 201) {
+        ElMessage.success('作业布置成功')
+        dialogVisible.value = false
+        clearHomeworkForm()
+        fetchHomeworks()
+      } else {
+        ElMessage.error(result.data.error || '作业布置失败，请重试。')
+      }
+    } catch (error) {
+      console.error('Error adding assignment:', error)
+      ElMessage.error('发生错误，请稍后重试。')
+    }
+  }
+
+  const handleFileChange = (file) => {
+    uploadForm.value.file = file.raw;
+  };
+
+  const delAssignment = async (assignmentId) => {
+    let result = await assignmentDeleteService(props.courseNo,assignmentId);
+    if(result.status === 201){
+      ElMessage.success('作业布置成功');
+      fetchHomeworks();
+    }
   }
   
   </script>

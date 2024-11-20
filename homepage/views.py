@@ -629,6 +629,7 @@ class CreateAssignmentView(APIView):
 
             assignment_file = request.FILES.get('assignment_file', None)
 
+
             # 如果有文件，上传到阿里云OSS
             file_path = ''
             if assignment_file:
@@ -667,7 +668,8 @@ class CreateAssignmentView(APIView):
         assignment_id = request.data.get('assignment_id', None)
 
         assignment = models.Assignment.objects.get(id=assignment_id)
-        bucket.delete_object(assignment.assignment_file)
+        if assignment.assignment_file is not None and assignment.assignment_file != '':
+            bucket.delete_object(assignment.assignment_file)
 
         Assignment.objects.filter(id=assignment_id).delete()
         return Response({'message': '作业成功删除'},

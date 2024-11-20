@@ -42,7 +42,7 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 - 历年试题库
 - 习题库
 - ~~@他人~~
-- #话题
+- ~~#话题~~
 #### 5.课程考核
 - 布置作业
 - 批改
