@@ -7,6 +7,7 @@ import Review from "@/components/Review.vue"
 import PersonalHome from "@/views/PersonalHome.vue";
 import UserView from "@/views/UserView.vue";
 import TopicPage from "@/views/TopicPage.vue";
+import AssignmentDetail from "@/views/AssignmentDetail.vue";
 
 
 const routes = [
@@ -53,6 +54,11 @@ const routes = [
       path:"/:courseNo/showtopic/:topicTitle",
       name:"TopicPage",
       component:TopicPage,
+    },
+    {
+      path:"/:courseNo/assignment/:assignmentId",
+      name:"AssignmentDetail",
+      component:AssignmentDetail,
     },
 ];
 

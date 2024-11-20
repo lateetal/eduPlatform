@@ -357,7 +357,7 @@ class ResourseFile(APIView):
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             resource.delete()
-            return Response({'message': 'Resource deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'message': 'Resource deleted successfully!'}, status=status.HTTP_200_OK)
 
         except ObjectDoesNotExist:
             return Response({'error': 'Resource not found.'}, status=status.HTTP_404_NOT_FOUND)

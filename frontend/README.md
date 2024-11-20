@@ -44,7 +44,7 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 - ~~@他人~~
 - ~~#话题~~
 #### 5.课程考核
-- 布置作业
+- ~~布置作业~~
 - 批改
 - 成绩统计
 - 互评

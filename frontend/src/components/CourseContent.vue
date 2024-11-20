@@ -56,7 +56,10 @@
         </ul>
       </div>
       <div v-if="selectedTab === 'ppts'" class="course-ppts">
-        <CoursePPT :courseNo="courseNo" />
+        <CoursePPT 
+          :courseNo="courseNo"
+          :userType="userType"
+        />
       </div>
   
       <div v-if="selectedTab === 'papers'" class="course-papers">

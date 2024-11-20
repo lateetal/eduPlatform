@@ -6,19 +6,20 @@
           <h3>电子课件</h3>
         </div>
         <div class="tree-content">
-          <div v-for="semester in semesters" :key="semester.id" class="tree-item">
-            <div class="folder-item" @click="semester.expanded = !semester.expanded">
-              <el-icon><FolderOpened v-if="semester.expanded" /><Folder v-else /></el-icon>
-              {{ semester.name }}
-            </div>
-            <div v-if="semester.expanded" class="sub-items">
-              <div v-for="file in semester.files" :key="file.id" class="file-item" 
-                   :class="{ active: selectedFile === file }"
-                   @click="selectFile(file)">
-                <el-icon><Document /></el-icon>
-                {{ file.name }}
-              </div>
-            </div>
+          <div class="tree-root" @click="selectFile(resources)">
+            <el-icon>
+              <FolderOpened v-if="selectedFolder.id === resources.id" />
+              <Folder v-else />
+            </el-icon>
+            电子课件
+          </div>
+
+          <div v-for="folder in resources.subfolders" :key="folder.id" class="tree-item">
+            <FolderTree 
+              :folder="folder" 
+              :selectedFolder="selectedFolder" 
+              @selectFile="selectFile"
+            />
           </div>
         </div>
       </div>
@@ -26,45 +27,31 @@
       <!-- 右侧内容区 -->
       <div class="content-area">
         <div class="action-buttons">
-          <el-button type="primary" @click="showUploadDialog">上传文件</el-button>
-          <el-button @click="showReferenceDialog">引用文件</el-button>
-          <el-button @click="showNewFolderDialog">新建目录</el-button>
-          <el-button @click="moveSelected">移动</el-button>
-          <el-button @click="deleteSelected">删除</el-button>
-          <el-button type="success" @click="publishSelected">发布</el-button>
-          <el-button type="warning" @click="unpublishSelected">取消发布</el-button>
+          <el-button type="primary" @click="uploadDialogVisible = true">上传文件</el-button>
+          <el-button type="success" @click="newFolderDialogVisible = true">新建目录</el-button>
+          <el-button type="info" @click="deleteFolderDialogVisible = true">删除文件夹</el-button>
         </div>
   
         <div class="file-table">
           <table>
             <thead>
               <tr>
-                <th><el-checkbox v-model="selectAll" @change="handleSelectAll" /></th>
-                <th>目录名称</th>
+                <th>名称</th>
                 <th>属性</th>
                 <th>操作</th>
-                <th>发布状态</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in currentFiles" :key="item.id">
-                <td><el-checkbox v-model="item.selected" /></td>
-                <td>{{ item.name }}</td>
+              <tr v-for="item in currentFiles" :key="item.rno">
+                <td>{{ item.rname }}</td>
                 <td>
-                  <el-icon><Folder v-if="item.type === 'folder'" /><Document v-else /></el-icon>
+                  <el-icon><Document /></el-icon>
                 </td>
                 <td>
                   <el-button-group>
-                    <el-button size="small" @click="editItem(item)">编辑</el-button>
                     <el-button size="small" @click="downloadItem(item)">下载</el-button>
-                    <el-button size="small" @click="deleteItem(item)">删除</el-button>
+                    <el-button size="small" @click="deleteFile(item)">删除</el-button>
                   </el-button-group>
-                </td>
-                <td>
-                  <el-switch
-                    v-model="item.published"
-                    @change="(val) => togglePublish(item, val)"
-                  />
                 </td>
               </tr>
             </tbody>
@@ -74,197 +61,216 @@
   
       <!-- 上传文件对话框 -->
       <el-dialog v-model="uploadDialogVisible" title="上传文件" width="500px">
+        <span>上传至文件夹</span>
+        <el-input 
+          v-model="selectedFolder.folder_name"
+          style="width:200px"
+          disabled
+        />
+        <p>上传文件</p>
         <el-upload
           class="upload-demo"
-          drag
-          action="/api/upload"
-          multiple
-          :on-success="handleUploadSuccess"
-          :on-error="handleUploadError"
+          action="#"
+          :on-change="handleFileChange"
+          :auto-upload="false"
         >
-          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-          <div class="el-upload__text">
-            拖拽文件到此处或 <em>点击上传</em>
-          </div>
+          <el-button type="primary">上传附件</el-button>
         </el-upload>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="uploadDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="uploadFile">
+              确认
+            </el-button>
+          </span>
+        </template>
       </el-dialog>
   
       <!-- 新建目录对话框 -->
       <el-dialog v-model="newFolderDialogVisible" title="新建目录" width="500px">
         <el-form :model="newFolderForm">
+          <el-form-item label="当前文件夹">
+            <el-input 
+              v-model="selectedFolder.folder_name"
+              style="width:200px"
+              disabled
+            />
+          </el-form-item>
           <el-form-item label="目录名称">
             <el-input v-model="newFolderForm.name" />
           </el-form-item>
         </el-form>
         <template #footer>
           <span class="dialog-footer">
-            <el-button @click="newFolderDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="createNewFolder">确定</el-button>
+            <el-button @click="newFolderForm.name = '';newFolderDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="createFolder">确定</el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="deleteFolderDialogVisible" title="删除文件夹" width="500px">
+        <span>文件夹名</span>
+        <el-input 
+          v-model="selectedFolder.folder_name"
+          style="width:200px"
+          disabled
+        />
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="deleteFolderDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="deleteFolder">确定</el-button>
           </span>
         </template>
       </el-dialog>
     </div>
   </template>
   
-  <script>
-  import { ref } from 'vue'
-  import { Document, Folder, FolderOpened, UploadFilled } from '@element-plus/icons-vue'
-  
-  export default {
-    name: 'CoursePPTs',
-    components: {
-      Document,
-      Folder,
-      FolderOpened,
-      UploadFilled
-    },
-    props: {
-      courseNo: {
-        type: String,
-        required: true
+<script setup>
+import { ref } from 'vue'
+import { Document, Folder, FolderOpened } from '@element-plus/icons-vue'
+import { pptListService,
+        fileUploadService,
+        fileDeleteService,
+        subfolderAddService,
+        subfolderDeleteService} from '@/api/homepage.js'
+import { ElMessage } from 'element-plus';
+import FolderTree from './FolderTree.vue';
+
+const props = defineProps({
+  courseNo: {
+    type: String,
+    required: true
+  },
+  userType:{
+    type: String,
+    required: true
+  },
+});
+
+const resources = ref([]);
+const currentFiles = ref([]);
+const selectedFolder = ref({});
+const uploadDialogVisible = ref(false);
+const uploadForm = ref({ file: null });
+const newFolderDialogVisible = ref(false)
+const newFolderForm = ref({
+  name: ''
+});
+const deleteFolderDialogVisible = ref(false);
+
+const fetchResources = async () => {
+  try{
+    let result = await pptListService(props.courseNo);
+    if(result.status === 200){
+      resources.value = result.data;
+      selectFile(resources);
+    } else {
+      ElMessage.error(result.data.error || '获取电子课件失败');
+    }
+  } catch(err){
+    ElMessage.error('获取电子课件失败，未定义错误');
+    console.log(err);
+  }
+}
+
+fetchResources();
+
+const selectFile = (file) => {
+  selectedFolder.value = file;
+  currentFiles.value = selectedFolder.value.resources;
+};
+
+const handleFileChange = (file) => {
+  uploadForm.value.file = file.raw;
+};
+
+const uploadFile = async () => {
+  if(uploadForm.value.file){
+    const formData = new FormData()
+    formData.append('folderPath',selectedFolder.value.id)
+    formData.append('rname', uploadForm.value.file.name)
+    formData.append('resourceFile',uploadForm.value.file)
+    try{
+      let result = await fileUploadService(props.courseNo,formData);
+      if(result.status === 201){
+        ElMessage.success('上传文件成功');
+        fetchResources();
+        uploadDialogVisible.value = false;
+      } else {
+        ElMessage.error(result.data.error || '上传文件失败')
       }
-    },
-    setup() {
-      const semesters = ref([
-        {
-          id: 1,
-          name: '2023-2024第一学期',
-          expanded: true,
-          files: [
-            { id: 1, name: '第1章 绪论', type: 'folder' },
-            { id: 2, name: 'PPT模板', type: 'file' }
-          ]
-        },
-        {
-          id: 2,
-          name: '2023-2023第二学期',
-          expanded: false,
-          files: []
-        }
-      ])
+    } catch(err){
+      ElMessage.error('上传文件失败，未定义错误');
+      console.log(err);
+    }
+  } else {
+    ElMessage.error('未选择文件');
+  }
   
-      const currentFiles = ref([
-        { id: 1, name: '第1章 绪论', type: 'folder', selected: false, published: true },
-        { id: 2, name: 'PPT模板', type: 'file', selected: false, published: false }
-      ])
-  
-      const selectedFile = ref(null)
-      const selectAll = ref(false)
-      const uploadDialogVisible = ref(false)
-      const newFolderDialogVisible = ref(false)
-      const newFolderForm = ref({
-        name: ''
-      })
-  
-      const handleSelectAll = (val) => {
-        currentFiles.value.forEach(file => file.selected = val)
+}
+
+const deleteFile = async (file) => {
+  try{
+    let result = await fileDeleteService(props.courseNo,file.rno);
+    if(result.status === 200){
+      ElMessage.success('删除文件成功');
+      fetchResources();
+    } else {
+      ElMessage.error(result.data.error || '删除文件失败');
+    }
+  } catch (err) {
+    ElMessage.error('上传文件失败，未定义错误');
+    console.log(err);
+  }
+}
+
+
+const createFolder = async () => {
+  if (newFolderForm.value.name) {
+    const formData = new FormData()
+    formData.append('folderPath',selectedFolder.value.folderPathInSql + selectedFolder.value.id + '/')
+    formData.append('folderName',newFolderForm.value.name);
+    try {
+      let result = await subfolderAddService(props.courseNo,formData);
+      if(result.status === 200){
+        ElMessage.success('新建文件夹成功');
+        fetchResources();
+        newFolderDialogVisible.value = false;
+      } else {
+        ElMessage.error(result.data.error || '新建文件夹失败')
       }
-  
-      const selectFile = (file) => {
-        selectedFile.value = file
-      }
-  
-      const showUploadDialog = () => {
-        uploadDialogVisible.value = true
-      }
-  
-      const showNewFolderDialog = () => {
-        newFolderDialogVisible.value = true
-      }
-  
-      const createNewFolder = () => {
-        if (newFolderForm.value.name) {
-          currentFiles.value.push({
-            id: Date.now(),
-            name: newFolderForm.value.name,
-            type: 'folder',
-            selected: false,
-            published: false
-          })
-          newFolderDialogVisible.value = false
-          newFolderForm.value.name = ''
-        }
-      }
-  
-      const handleUploadSuccess = () => {
-        // Handle successful upload
-        uploadDialogVisible.value = false
-      }
-  
-      const handleUploadError = (error) => {
-        // Handle upload error
-        console.error('Upload failed:', error)
-      }
-  
-      const moveSelected = () => {
-        // Implement move functionality
-      }
-  
-      const deleteSelected = () => {
-        currentFiles.value = currentFiles.value.filter(file => !file.selected)
-        selectAll.value = false
-      }
-  
-      const publishSelected = () => {
-        currentFiles.value.forEach(file => {
-          if (file.selected) {
-            file.published = true
-          }
-        })
-      }
-  
-      const unpublishSelected = () => {
-        currentFiles.value.forEach(file => {
-          if (file.selected) {
-            file.published = false
-          }
-        })
-      }
-  
-      const editItem = (item) => {
-        // Implement edit functionality
-        console.log('edit',item)
-      }
-  
-      const downloadItem = (item) => {
-        // Implement download functionality
-        console.log('delete',item)
-      }
-  
-      const deleteItem = (item) => {
-        currentFiles.value = currentFiles.value.filter(file => file.id !== item.id)
-      }
-  
-      const togglePublish = (item, val) => {
-        item.published = val
-      }
-  
-      return {
-        semesters,
-        currentFiles,
-        selectedFile,
-        selectAll,
-        uploadDialogVisible,
-        newFolderDialogVisible,
-        newFolderForm,
-        handleSelectAll,
-        selectFile,
-        showUploadDialog,
-        showNewFolderDialog,
-        createNewFolder,
-        handleUploadSuccess,
-        handleUploadError,
-        moveSelected,
-        deleteSelected,
-        publishSelected,
-        unpublishSelected,
-        editItem,
-        downloadItem,
-        deleteItem,
-        togglePublish
-      }
+    } catch (err) {
+      ElMessage.error('新建文件夹失败，未定义错误');
+      console.log(err);
     }
   }
+}
+
+const deleteFolder = async () => {
+  try{
+    let result = await subfolderDeleteService(props.courseNo,selectedFolder.value.id);
+    if(result.status === 200){
+      ElMessage.success('删除文件夹成功');
+      fetchResources();
+      deleteFolderDialogVisible.value = false;
+    } else {
+      ElMessage.error(result.data.error || '删除文件夹失败');
+    }
+  } catch (err) {
+    ElMessage.error('删除文件夹失败，未定义错误');
+    console.log(err);
+  }
+}
+
+const downloadItem = (item) => {
+  const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com/';
+  const downloadUrl = BUCKET_URL + item.rfileInOSS;
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = item.rfileInOSS.split('/').pop(); 
+  link.click();
+}
+
   </script>
   
   <style scoped>
@@ -294,6 +300,15 @@
   
   .tree-content {
     padding: 16px;
+  }
+
+  .tree-root {
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .tree-root:hover {
+    background-color: #e9ecef;
   }
   
   .tree-item {

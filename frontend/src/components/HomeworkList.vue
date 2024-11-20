@@ -1,12 +1,18 @@
 <template>
     <div class="homework-container">
       <div class="header">
-        <el-button v-if="userType==='teacher'" type="primary" @click="dialogTitle='布置作业';dialogVisible = true">布置作业</el-button>
+        <el-button v-if="userType==='teacher'" type="primary" @click="dialogTitle='布置作业';dialogVisible = true">
+          布置作业
+        </el-button>
       </div>
   
       <div class="table-container">
         <el-table :data="homeworks" style="width: 100%">
-          <el-table-column prop="title" label="作业标题" width="200"/>
+          <el-table-column label="作业标题" width="200">
+            <template #default="scope">
+              <router-link :to="{name:'AssignmentDetail',params:{courseNo:props.courseNo,assignmentId:scope.row.id}}">{{ scope.row.title }}</router-link>
+            </template>
+          </el-table-column>
           <el-table-column label="提交人数" width="100">
             <template #default="scope">
               {{ scope.row.submitNum }} / {{ scope.row.studentNum }}
@@ -19,7 +25,7 @@
               <el-button type="primary" link @click="publicGrade(scope.row)">
                 公布成绩
               </el-button>
-              <el-button type="primary" link @click="editAssignment(scope.row)">
+              <el-button type="primary" link @click="editDialog(scope.row)">
                 编辑
               </el-button>
               <el-button type="danger" link @click="delAssignment(scope.row.id)">
@@ -99,7 +105,7 @@
         <template #footer>
           <span class="dialog-footer">
             <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="addAssignment">
+            <el-button type="primary" @click="dialogTitle==='布置作业'?addAssignment():editAssignment()">
               确认
             </el-button>
           </span>
@@ -113,7 +119,8 @@
   import { ElMessage } from 'element-plus';
   import { assignmentListService,
           assignmentAddService,
-          assignmentDeleteService } from '@/api/homepage';
+          assignmentDeleteService,
+          assignmentUpdateService, } from '@/api/homepage';
   
   const props = defineProps({
     courseNo: {
@@ -125,7 +132,7 @@
       required: true,
     }
   })
-  
+
   const dialogVisible = ref(false)
   const homeworks = ref([]);
   const homeworkForm = ref({
@@ -140,6 +147,7 @@
   });
   const uploadForm = ref({ file: null });
   const dialogTitle = ref('');
+  const editId = ref(null);
 
   const fetchHomeworks = async () => {
     try{
@@ -223,6 +231,54 @@
     if(result.status === 201){
       ElMessage.success('作业布置成功');
       fetchHomeworks();
+    }
+  }
+
+  const editDialog = (assignment) => {
+    editId.value = assignment.id;
+    homeworkForm.value = assignment;
+    delete homeworkForm.value.id;
+    dialogTitle.value = '编辑作业';
+    dialogVisible.value = true;
+  }
+
+  const editAssignment = async () => {
+    try {
+      if(homeworkForm.value.isMutualAssessment){
+        homeworkForm.value.isMutualAssessment = 1;
+      } else {
+        homeworkForm.value.isMutualAssessment = 0;
+      }
+
+      if(homeworkForm.value.allowDelaySubmission){
+        homeworkForm.value.allowDelaySubmission = 1;
+      } else {
+        homeworkForm.value.allowDelaySubmission = 0;
+      }
+      const formData = new FormData()
+      formData.append('assignment_id',editId.value)
+      formData.append('title', homeworkForm.value.title)
+      formData.append('description', homeworkForm.value.description)
+      formData.append('start_date', homeworkForm.value.start_date)
+      formData.append('due_date', homeworkForm.value.due_date)
+      formData.append('isMutualAssessment', homeworkForm.value.isMutualAssessment)
+      formData.append('allowDelaySubmission', homeworkForm.value.allowDelaySubmission)
+      formData.append('maxGrade', homeworkForm.value.maxGrade)
+      formData.append('assignment_file', uploadForm.value.file);
+
+      const result = await assignmentUpdateService(props.courseNo, formData)
+
+      if (result.status === 200) {
+        ElMessage.success('作业修改成功')
+        dialogVisible.value = false;
+        clearHomeworkForm()
+        fetchHomeworks()
+      } else {
+        ElMessage.error(result.data.error || '作业修改失败，请重试。')
+      }
+    } catch (error) {
+      console.error('Error adding assignment:', error)
+      ElMessage.error('发生错误，请稍后重试。')
     }
   }
   
