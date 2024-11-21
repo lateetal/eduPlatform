@@ -1,5 +1,5 @@
 <template>
-    <div class="homework-container">
+    <div class="homework-container" v-if="!showManagePage">
       <div class="header">
         <el-button v-if="userType==='teacher'" type="primary" @click="dialogTitle='布置作业';dialogVisible = true">
           布置作业
@@ -20,10 +20,26 @@
           </el-table-column>
           <el-table-column prop="start_date" label="开始时间" width="180" />
           <el-table-column prop="due_date" label="截止时间" width="180" />
+          <el-table-column v-if="userType==='student'" label="提交时间" width="180">
+            <template #default="scope">
+              <span v-if="committeds.some(item => item.assignment_id === scope.row.id)">{{ committeds.find(item => item.assignment_id === scope.row.id).submitted_at.split('.')[0] }}</span>
+              <span v-else>未提交</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="userType==='student'" label="分数" width="100">
+            <template #default="scope">
+              <span v-if="committeds.some(item => item.assignment_id === scope.row.id)">{{ committeds.find(item => item.assignment_id === scope.row.id).grade === -1 ? '未评': committeds.find(item => item.assignment_id === scope.row.id).grade}}</span>
+              <span v-else>未提交</span>
+            </template>
+          </el-table-column>
+          
           <el-table-column label="操作" width="250" fixed="right">
             <template #default="scope">
-              <el-button v-if="userType==='teacher'" type="primary" link @click="publicGrade(scope.row)">
-                公布成绩
+              <el-button v-if="userType==='teacher'" type="primary" link @click="manageAssignment(scope.row)">
+                批阅管理
+              </el-button>
+              <el-button v-if="userType==='teacher' && scope.row.isMutualAssessment" type="primary" link @click="generateMutual(scope.row)">
+                互评任务
               </el-button>
               <el-button v-if="userType==='teacher'" type="primary" link @click="editDialog(scope.row)">
                 编辑
@@ -34,7 +50,11 @@
               <el-button v-if="userType==='student'" type="primary" @click="commitDialog(scope.row)">
                 提交
               </el-button>
-              <el-button v-if="userType==='student'" type="info" @click="assignmentView(scope.row)">
+              <el-button 
+                v-if="userType==='student' && committeds.some(item => item.assignment_id === scope.row.id)" 
+                type="info"
+                @click="goToCommittedDetail(committeds.find(item => item.assignment_id === scope.row.id))"
+              >
                 查看
               </el-button>
             </template>
@@ -152,17 +172,71 @@
           </span>
         </template>
       </el-dialog>
+
+      <!--互评任务发布对话框-->
+      <el-dialog 
+        v-model="mutualDialogVisible"
+        title="提示"
+        width="500"
+      >
+        <label>作业：{{ mutalAssignment.title }}</label>
+        <p>确认发布互评任务吗？</p>
+        <template #footer>
+          <div class="dialog-footer">
+            <el-button @click="mutualDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="publishMutual();mutualDialogVisible = false">
+              确认
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
+
+    </div>
+
+    <div class="manage-container" v-if="showManagePage">
+      <h2>作业批阅/管理</h2>
+      <div class="assignment-details">
+        <h3>作业标题：{{ managedAssignment.title }}</h3>
+        <p>提交时间：{{ managedAssignment.start_date }} - {{ managedAssignment.due_date }}</p>
+        <el-tabs v-model="activeTab">
+          <el-tab-pane label="作业批阅/成绩" name="review">
+            <el-table :data="assignmentData" style="width: 100%">
+              <el-table-column prop="studentId" label="学号" />
+              <el-table-column prop="studentName" label="姓名" />
+              <el-table-column prop="submissionTime" label="提交时间" />
+              <el-table-column prop="teacherScore" label="教师打分" />
+              <el-table-column prop="score" label="成绩" />
+              <el-table-column label="操作">
+                <template #default="scope">
+                  <el-button type="text" @click="reviewAssignment(scope.row)">批阅</el-button>
+                  <el-button type="text" @click="deleteAssignment(scope.row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+          <el-tab-pane label="未提交学生名单" name="notSubmitted">
+            <el-table :data="submissions.not_submitted_students">
+              <el-table-column prop="sno" label="学号" />
+              <el-table-column prop="sname" label="姓名" />
+            </el-table>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
     </div>
   </template>
   
   <script setup>
   import { ref } from 'vue';
+  import { useRouter } from 'vue-router';
   import { ElMessage } from 'element-plus';
-  import { assignmentListService,
+  import {assignmentListService,
           assignmentAddService,
           assignmentDeleteService,
           assignmentUpdateService,
-          assignmentCommitService } from '@/api/homepage';
+          assignmentCommitService,
+          committedListService,
+          manageListService,
+          mutualAddService, } from '@/api/homepage';
   
   const props = defineProps({
     courseNo: {
@@ -175,6 +249,7 @@
     }
   })
 
+  const router = useRouter();
   const dialogVisible = ref(false)
   const homeworks = ref([]);
   const homeworkForm = ref({
@@ -195,6 +270,24 @@
     submission_text:'',
   })
   const commitAssignment = ref({});
+  const committeds = ref({});
+  const showManagePage = ref(false);
+  const mutualDialogVisible = ref(false);
+
+  const fetchCommitteds = async () => {
+    if(props.userType === 'student') {
+      try {
+        let result = await committedListService(props.courseNo);
+        if(result.status === 200) {
+          committeds.value = result.data.data;
+        }
+      } catch (err) {
+        ElMessage.error('获取已提交作业失败');
+        console.log(err);
+      }
+    }
+  }
+  fetchCommitteds();
 
   const fetchHomeworks = async () => {
     try{
@@ -351,6 +444,59 @@
     }
     commitDialogVisible.value = false;
   }
+
+  const goToCommittedDetail = (committed) => {
+    router.push({
+      name:'CommittedDetail', 
+      params:{
+        courseNo:props.courseNo,
+        assignmentId:committed.assignment_id,
+        sno:committed.student_id,
+      }});
+  }
+
+  const manageAssignment = (assignment) => {
+    managedAssignment.value = assignment;
+    fetchManaged();
+    showManagePage.value = true;
+  }
+
+  const mutalAssignment = ref({});
+
+  const generateMutual = (assignment) => {
+    mutalAssignment.value = assignment;
+    mutualDialogVisible.value = true;
+  }
+
+  const publishMutual = async() => {
+    try {
+      let result = await mutualAddService(mutalAssignment.value.id);
+      if(result.status === 200){
+        ElMessage.success('发布互评任务成功');
+      }
+    } catch (err) {
+      ElMessage.error('发布互评任务失败');
+      console.log(err);
+    }
+  }
+
+  //manage-page
+  const managedAssignment = ref({});
+  const activeTab = ref('review');
+  const submissions = ref([]); 
+
+  const fetchManaged = async() => {
+    try {
+      let result = await manageListService(props.courseNo,managedAssignment.value.id);
+      if(result.status === 200){
+        submissions.value = result.data;
+      }
+    } catch (err) {
+      ElMessage.error('获取作业管理失败');
+      console.log(err);
+    }
+  }
+
   
   </script>
   
@@ -381,4 +527,23 @@
   :deep(.el-dialog__body) {
     padding: 20px 40px;
   }
+
+  .manage-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.assignment-details {
+  margin-top: 20px;
+}
+
+.assignment-details h3 {
+  margin-bottom: 10px;
+}
+
+.assignment-details p {
+  margin-bottom: 20px;
+}
   </style>

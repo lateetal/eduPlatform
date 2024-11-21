@@ -115,10 +115,10 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
         fields = [
-            'student_id', 'student_name', 'submission_text', 'submission_file',
+            'student_id', 'student_name', 'submission_text', 'submission_file', 'assignment_id',
             'submitted_at', 'delay_time', 'grade'
         ]
-        read_only_fields = ['student_id', 'student_name', 'submission_text', 'submission_file', 'submitted_at', 'delay_time', 'grade']
+        read_only_fields = ['student_id', 'student_name', 'submission_text', 'submission_file', 'assignment_id', 'submitted_at', 'delay_time', 'grade']
 
 #课程文件序列化
 class courseResource_pptSerializer(serializers.ModelSerializer):

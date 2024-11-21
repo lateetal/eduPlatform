@@ -9,6 +9,7 @@ import UserView from "@/views/UserView.vue";
 import TopicPage from "@/views/TopicPage.vue";
 import AssignmentDetail from "@/views/AssignmentDetail.vue";
 import FileView from "@/views/FileView.vue";
+import CommittedDetail from "@/views/CommittedDetail.vue";
 
 
 const routes = [
@@ -66,6 +67,11 @@ const routes = [
       name:"FileView",
       component:FileView,
     },
+    {
+      path:"/:courseNo/assignment/:assignmentId/student/:sno",
+      name:"CommittedDetail",
+      component:CommittedDetail,
+    }
 ];
 
 const router = createRouter({

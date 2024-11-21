@@ -35,6 +35,22 @@ export const assignmentCommitService = (courseNo,assignmentId,assignmentData) =>
     return request.post(`${API_URL}/student/course/${courseNo}/assignment/${assignmentId}/submit/`,assignmentData);
 }
 
+export const committedViewService = (courseNo,assignmentId,username) => {
+    return request.get(`${API_URL}/course/${courseNo}/assignment/${assignmentId}/student/${username}`)
+}
+
+export const committedListService = (courseNo) => {
+    return request.get(`${API_URL}/course/${courseNo}/getAllSubmit`);
+}
+
+export const manageListService = (courseNo,assignmentId) => {
+    return request.get(`${API_URL}/course/${courseNo}/assignment/${assignmentId}/`)
+}
+
+export const mutualAddService = (assignmentId) => {
+    return request.post(`${API_URL}/${assignmentId}/generateMutualAssessment`);
+}
+
 //课程资源
 export const pptListService = (courseNo) => {
     return request.get(`${API_URL}/course/${courseNo}/resources_folder`);

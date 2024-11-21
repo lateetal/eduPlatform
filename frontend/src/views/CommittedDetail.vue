@@ -9,13 +9,29 @@
           </div>
 
           <div class="info-item">
-            <label>作业满分：</label>
-            <span>{{ assignment.maxGrade }} 分</span>
+            <label>学生：</label>
+            <span>{{ committed.student_id }} {{ committed.student_name }}</span>
           </div>
 
           <div class="info-item">
-            <label>作业内容：</label>
-            <p>{{ assignment.description }}</p>
+            <label>提交时间</label>
+            <span>{{ committed.submitted_at.split('.')[0] }}</span>
+          </div>
+
+          <div class="info-item" v-if="committed.delay_time">
+            <label>逾期时间</label>
+            <span>{{ committed.delay_time }}</span>
+          </div>
+
+          <div class="info-item">
+            <label>分数：</label>
+            <span v-if="committed.grade !== -1">{{ committed.grade }} / {{assignment.maxGrade}}</span>
+            <span v-else>未评分</span>
+          </div>
+
+          <div class="info-item">
+            <label>内容：</label>
+            <p>{{ committed.submission_text }}</p>
           </div>
 
           <div class="info-item">
@@ -29,17 +45,13 @@
                 v-if="previewVisible"
                 annotation-layer 
                 text-layer 
-                :source="BUCKET_URL + assignment.assignment_file" 
+                :source="BUCKET_URL + committed.submission_file" 
             />
           </div>
 
           <div class="info-item">
             <label>提交时间：</label>
-            <span>{{ assignment.start_date }} - {{ assignment.due_date }}</span>
-          </div>
-
-          <div class="info-item">
-            <label v-if="assignment.allowDelaySubmission">逾期可提交</label>
+            <span>{{  }}</span>
           </div>
         </div>
 
@@ -54,23 +66,25 @@ import {ref} from 'vue';
 import { useRoute,useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import VuePdfEmbed from 'vue-pdf-embed';
-import { assignmentSearchService } from '@/api/homepage';
+import { assignmentSearchService,
+        committedViewService,} from '@/api/homepage';
 
 const route = useRoute();
 const router = useRouter();
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com/';
 const assignmentId = route.params.assignmentId;
 const courseNo = route.params.courseNo;
+const sno = route.params.sno;
 const assignment = ref({});
 const fileName = ref('');
 const previewVisible = ref(false);
+const committed = ref({});
 
 const fetchAssignment = async () => {
     try {
         let result = await assignmentSearchService(courseNo, assignmentId);
         if(result.status === 200){
             assignment.value = result.data.data;
-            fileName.value = assignment.value.assignment_file.split('/').pop();
         }
     } catch (err){
         ElMessage.error('获取作业信息失败');
@@ -79,15 +93,29 @@ const fetchAssignment = async () => {
 }
 fetchAssignment();
 
+const fetchCommitted = async () => {
+    try {
+        let result = await committedViewService(courseNo,assignmentId,sno);
+        if(result.status === 200) {
+            committed.value = result.data.data;
+            fileName.value = committed.value.submission_file.split('/').pop();
+        }
+    } catch (err) {
+        ElMessage.error('获取已提交作业失败');
+        console.log(err);
+    }
+}
+fetchCommitted();
+
 const goBack = () => {
     router.go(-1);
 }
 
 const downloadFile = () => {
-    const downloadUrl = BUCKET_URL + assignment.value.assignment_file;
+    const downloadUrl = BUCKET_URL + committed.value.submission_file;
     const link = document.createElement('a');
     link.href = downloadUrl;
-    link.download = assignment.value.assignment_file.split('/').pop(); 
+    link.download = committed.value.submission_file.split('/').pop(); 
     link.click();
 }
 
