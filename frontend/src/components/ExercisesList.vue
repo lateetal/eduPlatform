@@ -132,7 +132,7 @@
 
         <template v-if="dialogTitle==='新建习题'" #footer>
           <span class="dialog-footer">
-            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button @click="handleClose()">取消</el-button>
             <el-button type="primary" @click="addExerice()">
               确认
             </el-button>
@@ -239,32 +239,37 @@ const handleClose = () => {
 
 const addExerice = async () => {
     const formData = new FormData();
-    formData.append('question_type',exerciseForm.value.question_type);
-    formData.append('difficulty',exerciseForm.value.difficulty);
-    formData.append('knowledge_point',exerciseForm.value.knowledge_point);
-    formData.append('content',exerciseForm.value.content);
-    if(exerciseForm.value.question_type === '单选题' || exerciseForm.value.question_type === '多选题'){   
-        formData.append('options',exerciseForm.value.options);
-        if(exerciseForm.value.question_type === '单选题'){
-            formData.append('correct_answer',exerciseForm.value.correct_answer);
+    formData.append('question_type', exerciseForm.value.question_type);
+    formData.append('difficulty', exerciseForm.value.difficulty);
+    formData.append('knowledge_point', exerciseForm.value.knowledge_point);
+    formData.append('content', exerciseForm.value.content);
+
+    // 判断题型是否是单选题或者多选题
+    if (exerciseForm.value.question_type === '单选题' || exerciseForm.value.question_type === '多选题') {
+        // 将 options 转换为 JSON 字符串
+        formData.append('options', JSON.stringify(exerciseForm.value.options));
+
+        if (exerciseForm.value.question_type === '单选题') {
+            formData.append('correct_answer', exerciseForm.value.correct_answer);
         } else {
-            formData.append('correct_answer',exerciseForm.value.correct_answer.join(','));
+            formData.append('correct_answer', exerciseForm.value.correct_answer.join(','));
         }
-    } else if(exerciseForm.value.question_type === '主观题'){
-        formData.append('answer_explanation',exerciseForm.value.answer_explanation);
+    } else if (exerciseForm.value.question_type === '主观题') {
+        formData.append('answer_explanation', exerciseForm.value.answer_explanation);
     }
+
     try {
-        let result = await exerciseAddService(props.courseNo,formData);
-        if(result.status === 201){
+        let result = await exerciseAddService(props.courseNo, formData);
+        if (result.status === 201) {
             ElMessage.success('新建习题成功');
-            fetchExercises();
-            dialogVisible.value = false;
-        }
-    } catch (err) {
+            await fetchExercises();
+    }
+        } catch (err) {
         ElMessage.error('新建习题失败');
         console.log(err);
     }
-}
+    handleClose();
+};
 
 const deleteExercise = async(id) => {
     try {
@@ -282,6 +287,10 @@ const deleteExercise = async(id) => {
 const viewDialog = (exercise) => {
     dialogTitle.value = '查看习题';
     exerciseForm.value = exercise;
+    if(exercise.options){
+      exerciseForm.value.options = JSON.parse(exercise.options)
+    }
+
     if(exerciseForm.value.question_type === '多选题'){
         const arr = exerciseForm.value.correct_answer.split(',');
         exerciseForm.value.correct_answer = arr;
