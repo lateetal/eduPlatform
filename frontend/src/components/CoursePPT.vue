@@ -26,7 +26,7 @@
   
       <!-- 右侧内容区 -->
       <div class="content-area">
-        <div class="action-buttons">
+        <div class="action-buttons" v-if="userType === 'teacher'">
           <el-button type="primary" @click="uploadDialogVisible = true">上传文件</el-button>
           <el-button type="success" @click="newFolderDialogVisible = true">新建目录</el-button>
           <el-button type="info" @click="deleteFolderDialogVisible = true">删除文件夹</el-button>
@@ -43,14 +43,18 @@
             </thead>
             <tbody>
               <tr v-for="item in currentFiles" :key="item.rno">
-                <td>{{ item.rname }}</td>
+                <td>
+                  <router-link :to="{ name: 'FileView', params: { courseNo:props.courseNo, rno: item.rno } }">
+                    {{ item.rname }}
+                  </router-link>
+                </td>
                 <td>
                   <el-icon><Document /></el-icon>
                 </td>
                 <td>
                   <el-button-group>
                     <el-button size="small" @click="downloadItem(item)">下载</el-button>
-                    <el-button size="small" @click="deleteFile(item)">删除</el-button>
+                    <el-button v-if="userType === 'teacher'" size="small" @click="deleteFile(item)">删除</el-button>
                   </el-button-group>
                 </td>
               </tr>

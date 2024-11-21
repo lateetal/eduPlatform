@@ -8,6 +8,7 @@ import PersonalHome from "@/views/PersonalHome.vue";
 import UserView from "@/views/UserView.vue";
 import TopicPage from "@/views/TopicPage.vue";
 import AssignmentDetail from "@/views/AssignmentDetail.vue";
+import FileView from "@/views/FileView.vue";
 
 
 const routes = [
@@ -59,6 +60,11 @@ const routes = [
       path:"/:courseNo/assignment/:assignmentId",
       name:"AssignmentDetail",
       component:AssignmentDetail,
+    },
+    {
+      path:"/:courseNo/resources_file/:rno",
+      name:"FileView",
+      component:FileView,
     },
 ];
 

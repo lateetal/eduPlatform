@@ -63,10 +63,16 @@
       </div>
   
       <div v-if="selectedTab === 'papers'" class="course-papers">
-        <!-- Implement papers content -->
+        <PaperList
+          :courseNo="courseNo"
+          :userType="userType"
+        />
       </div>
       <div v-if="selectedTab === 'exercises'" class="course-exercises">
-        <!-- Implement exercises content -->
+        <ExercisesList 
+          :courseNo="courseNo"
+          :userType="userType"
+        />
       </div>
   
       <div v-if="selectedTab === 'homework'" class="course-homework">
@@ -120,6 +126,8 @@ import VuePdfEmbed from 'vue-pdf-embed';
 import { marked } from 'marked';
 import { useRouter } from 'vue-router';
 import HomeworkList from './HomeworkList.vue';
+import ExercisesList from './ExercisesList.vue';
+import PaperList from './PaperList.vue';
   
   const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com';
   const AI_URL = 'http://localhost:8000/homepage/aichat';
@@ -130,6 +138,8 @@ import HomeworkList from './HomeworkList.vue';
       CoursePPT,
       VuePdfEmbed,
       HomeworkList,
+      ExercisesList,
+      PaperList,
     },
     props: {
       selectedTab: {

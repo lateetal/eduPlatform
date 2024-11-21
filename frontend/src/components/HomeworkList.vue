@@ -21,15 +21,21 @@
           <el-table-column prop="start_date" label="开始时间" width="180" />
           <el-table-column prop="due_date" label="截止时间" width="180" />
           <el-table-column label="操作" width="250" fixed="right">
-            <template  v-if="userType==='teacher'" #default="scope">
-              <el-button type="primary" link @click="publicGrade(scope.row)">
+            <template #default="scope">
+              <el-button v-if="userType==='teacher'" type="primary" link @click="publicGrade(scope.row)">
                 公布成绩
               </el-button>
-              <el-button type="primary" link @click="editDialog(scope.row)">
+              <el-button v-if="userType==='teacher'" type="primary" link @click="editDialog(scope.row)">
                 编辑
               </el-button>
-              <el-button type="danger" link @click="delAssignment(scope.row.id)">
+              <el-button v-if="userType==='teacher'" type="danger" link @click="delAssignment(scope.row.id)">
                 删除
+              </el-button>
+              <el-button v-if="userType==='student'" type="primary" @click="commitDialog(scope.row)">
+                提交
+              </el-button>
+              <el-button v-if="userType==='student'" type="info" @click="assignmentView(scope.row)">
+                查看
               </el-button>
             </template>
           </el-table-column>
@@ -111,6 +117,41 @@
           </span>
         </template>
       </el-dialog>
+
+      <!--作业提交对话框-->
+      <el-dialog
+        v-model="commitDialogVisible"
+        title="提交作业"
+         width="50%"
+      >
+        <p>作业标题：{{commitAssignment.title}}</p>
+        <el-form :model="commitForm" label-width="120px">
+          <el-form-item label="作业描述">
+            <el-input v-model="commitForm.submission_text" />
+          </el-form-item>
+          <el-form-item label="选择附件">
+            <el-upload
+              class="upload-demo"
+              action="#"
+              :on-change="handleFileChange"
+              :auto-upload="false"
+            >
+              <el-button type="primary">上传附件</el-button>
+              <template #tip>
+                <div class="el-upload__tip">只能上传pdf文件</div>
+              </template>
+            </el-upload>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="commitDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="commitHomework">
+              确认
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
     </div>
   </template>
   
@@ -120,7 +161,8 @@
   import { assignmentListService,
           assignmentAddService,
           assignmentDeleteService,
-          assignmentUpdateService, } from '@/api/homepage';
+          assignmentUpdateService,
+          assignmentCommitService } from '@/api/homepage';
   
   const props = defineProps({
     courseNo: {
@@ -148,6 +190,11 @@
   const uploadForm = ref({ file: null });
   const dialogTitle = ref('');
   const editId = ref(null);
+  const commitDialogVisible = ref(false);
+  const commitForm = ref({
+    submission_text:'',
+  })
+  const commitAssignment = ref({});
 
   const fetchHomeworks = async () => {
     try{
@@ -229,7 +276,7 @@
   const delAssignment = async (assignmentId) => {
     let result = await assignmentDeleteService(props.courseNo,assignmentId);
     if(result.status === 201){
-      ElMessage.success('作业布置成功');
+      ElMessage.success('作业删除成功');
       fetchHomeworks();
     }
   }
@@ -237,7 +284,6 @@
   const editDialog = (assignment) => {
     editId.value = assignment.id;
     homeworkForm.value = assignment;
-    delete homeworkForm.value.id;
     dialogTitle.value = '编辑作业';
     dialogVisible.value = true;
   }
@@ -280,6 +326,30 @@
       console.error('Error adding assignment:', error)
       ElMessage.error('发生错误，请稍后重试。')
     }
+  }
+
+  const commitDialog = (assignment) => {
+    commitAssignment.value = assignment;
+    commitForm.value.submission_text = '';
+    uploadForm.value.file = '';
+    commitDialogVisible.value = true;
+  }
+
+  const commitHomework= async () => {
+    const formData = new FormData();
+    formData.append('submission_text',commitForm.value.submission_text);
+    formData.append('submission_file',uploadForm.value.file);
+    try {
+      let result = await assignmentCommitService(props.courseNo,commitAssignment.value.id,formData);
+      if(result.status === 201){
+        ElMessage.success('提交作业成功');
+        fetchHomeworks();
+      }
+    } catch (err) {
+      ElMessage.error('提交作业失败');
+      console.log(err);
+    }
+    commitDialogVisible.value = false;
   }
   
   </script>
