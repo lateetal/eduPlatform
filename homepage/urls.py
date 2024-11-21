@@ -36,6 +36,6 @@ urlpatterns = [
     path('course/<str:course_id>/resources_test/',views.CourseResourceListView_test.as_view(), name='resources_test'),
     path('course/<str:course_id>/resources_question/',views.CourseQuestionListView.as_view(), name='resources_question'),
     path('course/<str:course_id>/resources_question/<str:questionType>',views.CourseQuestionListView.as_view(), name='resources_question'),
-
+    path('course/<str:course_id>/getAllSubmit',views.getAllSubmit.as_view(),name='getAllSubmit'),
 
 ]

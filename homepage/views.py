@@ -1043,3 +1043,19 @@ class CourseQuestionListView(APIView):
         Question.objects.filter(id=id).delete()
         return Response({'message': 'Question deleted successfully!'}, status=status.HTTP_200_OK)
 
+
+class getAllSubmit(APIView):
+    def get(self, request, course_id):
+        user_id, user_type = extract_user_info_from_auth(request)
+        username = User.objects.get(pk=user_id).username
+
+        submissions = AssignmentSubmission.objects.filter(student_id=username)
+        submit = [] #学生提交的作业的数据
+
+        for submission in submissions:
+            assignment = Assignment.objects.get(pk=submission.assignment_id)
+            if assignment.course_id == course_id:
+                submit.append(submission)
+
+        ser = AssignmentSubmissionSerializer(submit, many=True)
+        return Response({'code': 200, 'data': ser.data})
