@@ -385,7 +385,8 @@ class AssignmentDetailView(APIView):
     def get(self, request, course_id, assignment_id):
         try:
             # 获取作业详情
-            assignment = Assignment.objects.get(id=assignment_id, course_id=course_id)
+            # assignment = Assignment.objects.get(id=assignment_id, course_id=course_id)
+            submission = models.AssignmentSubmission.objects.filter(assignment_id=assignment_id)
 
             # 获取已交作业的学生
             submitted_students = AssignmentSubmission.objects.filter(assignment_id=assignment_id)
@@ -402,7 +403,8 @@ class AssignmentDetailView(APIView):
             not_submitted_student_data = Student.objects.filter(sno__in=not_submitted_student_ids).values('sno', 'sname')
 
             # 序列化作业信息
-            serializer = AssignmentSerializer(assignment, many=False)
+            # serializer = AssignmentSerializer(assignment, many=False)
+            serializer = AssignmentSubmissionSerializer(submission, many=True)
 
             # 返回作业信息，已交作业学生和未交作业学生
             return Response({
@@ -732,6 +734,7 @@ class generateMutualAssessment(APIView):
     def post(self, request, assignment_id):
         # 获取所有该作业的提交记录
         submissions = AssignmentSubmission.objects.filter(assignment_id=assignment_id)
+        assignment = Assignment.objects.get(pk=assignment_id)
 
         # 如果作业没有提交或者人数太少，无法生成互评
         if submissions.count() < 2:
@@ -759,6 +762,9 @@ class generateMutualAssessment(APIView):
         # 批量创建互评数据
         with transaction.atomic():
             MutualAssessment.objects.bulk_create(mutual_assessments)
+
+        assignment.isPostMutualAssessment = True#修改生成互评表
+        assignment.save()
 
         return Response({'message': '互评任务发布成功'}, status=status.HTTP_200_OK)
 

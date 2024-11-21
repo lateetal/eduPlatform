@@ -59,6 +59,7 @@ class Assignment(models.Model):
     due_date = models.DateTimeField()  # 截止日期
     isMutualAssessment = models.BooleanField(default=False) #是否是互评
     allowDelaySubmission = models.BooleanField(default=False) #是否能补交
+    isPostMutualAssessment = models.BooleanField(default=False)
     delay_date = models.DateTimeField(blank=True, null=True, default=None) #补交最晚截止时间 不设置则可以一直提交
     maxGrade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=100) #作业满分
 
