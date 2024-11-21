@@ -18,6 +18,7 @@ urlpatterns = [
 
     #lzy部分路径
     path('course/<str:course_id>/assignments/', views.AssignmentListView.as_view(), name='assignment-list'),
+    path('course/<str:course_id>/oneAssignment/',views.AssignmentView.as_view(), name='oneAssignment'),
     path('course/<str:course_id>/assignment/<int:assignment_id>/', views.AssignmentDetailView.as_view(),
          name='assignment-detail'),
 # 查看某个学生提交的作业详情

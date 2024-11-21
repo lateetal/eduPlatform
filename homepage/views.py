@@ -379,8 +379,16 @@ class AssignmentListView(APIView):
         except models.Course.DoesNotExist:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
 
+# 获取单份作业信息
+class AssignmentView(APIView):
+    def get(self, request, course_id):
+        assignment_id = request.GET.get('assignment_id')
+        assignment = models.Assignment.objects.get(pk=assignment_id)
 
-# 作业详情视图
+        ser = AssignmentSerializer(assignment)
+        return Response({'code': 200, 'data': ser.data})
+
+# 作业详情视图（包括交的作业信息）
 class AssignmentDetailView(APIView):
     def get(self, request, course_id, assignment_id):
         try:
