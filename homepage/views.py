@@ -484,6 +484,11 @@ class TeacherAssignmentView(APIView):
             }
         )
 
+        print(assignment.isMutualAssessment)
+        if assignment.isMutualAssessment == False:
+            submission.grade = grade
+            submission.save()
+
         if created:
             return Response({"detail": "作业批改成功"}, status=status.HTTP_201_CREATED)
         else:

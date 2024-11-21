@@ -111,6 +111,7 @@ class TeacherAssignmentSerializer(serializers.ModelSerializer):
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.sname')  # Assuming 'sname' is the field name for student's name
+    grade = serializers.SerializerMethodField()  # Using SerializerMethodField to customize grade calculation
 
     class Meta:
         model = AssignmentSubmission
@@ -119,6 +120,19 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
             'submitted_at', 'delay_time', 'grade'
         ]
         read_only_fields = ['student_id', 'student_name', 'submission_text', 'submission_file', 'assignment_id', 'submitted_at', 'delay_time', 'grade']
+
+    def get_grade(self, obj):
+        # Try to get TeacherAssignment for this specific submission
+        try:
+            teacher_assignment = TeacherAssignment.objects.get(AssignmentSubmission=obj)
+            # Calculate the average grade (submission grade + teacher grade) / 2
+            if obj.grade != -1 and teacher_assignment.grade is not None:
+                return (obj.grade + teacher_assignment.grade) / 2
+            else:
+                return obj.grade  # If no valid grades, return the original submission grade
+        except TeacherAssignment.DoesNotExist:
+            # If no TeacherAssignment exists, return the original submission grade
+            return obj.grade
 
 #课程文件序列化
 class courseResource_pptSerializer(serializers.ModelSerializer):
