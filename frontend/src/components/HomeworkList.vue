@@ -38,7 +38,7 @@
               <el-button v-if="userType==='teacher'" type="primary" link @click="manageAssignment(scope.row)">
                 批阅管理
               </el-button>
-              <el-button v-if="userType==='teacher' && scope.row.isMutualAssessment" type="primary" link @click="generateMutual(scope.row)">
+              <el-button v-if="userType==='teacher' && scope.row.isMutualAssessment && !scope.row.isPostMutualAssessment" type="primary" link @click="generateMutual(scope.row)">
                 互评任务
               </el-button>
               <el-button v-if="userType==='teacher'" type="primary" link @click="editDialog(scope.row)">
@@ -57,6 +57,7 @@
               >
                 查看
               </el-button>
+
             </template>
           </el-table-column>
         </el-table>
@@ -200,16 +201,22 @@
         <p>提交时间：{{ managedAssignment.start_date }} - {{ managedAssignment.due_date }}</p>
         <el-tabs v-model="activeTab">
           <el-tab-pane label="作业批阅/成绩" name="review">
-            <el-table :data="assignmentData" style="width: 100%">
-              <el-table-column prop="studentId" label="学号" />
-              <el-table-column prop="studentName" label="姓名" />
-              <el-table-column prop="submissionTime" label="提交时间" />
-              <el-table-column prop="teacherScore" label="教师打分" />
-              <el-table-column prop="score" label="成绩" />
+            <el-table :data="submissions.data" style="width: 100%">
+              <el-table-column prop="student_id" label="学号" />
+              <el-table-column prop="student_name" label="姓名" />
+              <el-table-column label="提交时间">
+                <template #default="scope">
+                  <span>{{scope.row.submitted_at.split('.')[0]}}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="成绩">
+                <template #default="scope">
+                  <span>{{scope.row.grade === -1?'未评':scope.row.grade}}</span>
+                </template>
+              </el-table-column>
               <el-table-column label="操作">
                 <template #default="scope">
-                  <el-button type="text" @click="reviewAssignment(scope.row)">批阅</el-button>
-                  <el-button type="text" @click="deleteAssignment(scope.row)">删除</el-button>
+                  <el-button type="text" @click="goToCommittedDetail(scope.row)">批阅</el-button>
                 </template>
               </el-table-column>
             </el-table>

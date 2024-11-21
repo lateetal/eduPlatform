@@ -43,6 +43,24 @@
           </div>
         </div>
 
+        <div v-if="userType==='student'" class="mutual-tasks">
+          <h2>互评任务</h2>
+          <el-table :data="tasks" style="width: 100%">
+              <el-table-column prop="student_id" label="学号" />
+              <el-table-column prop="student_name" label="姓名" />
+              <el-table-column label="提交时间">
+                <template #default="scope">
+                  <span>{{scope.row.submitted_at.split('.')[0]}}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作">
+                <template #default="scope">
+                  <el-button type="text" @click="goToCommittedDetail(scope.row)">互评</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+        </div>
+
         <div class="actions">
           <el-button type="primary" @click="goBack">关闭</el-button>
         </div>
@@ -54,7 +72,9 @@ import {ref} from 'vue';
 import { useRoute,useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import VuePdfEmbed from 'vue-pdf-embed';
-import { assignmentSearchService } from '@/api/homepage';
+import {getUsernameService, 
+        assignmentSearchService,
+        mutualListService, } from '@/api/homepage';
 
 const route = useRoute();
 const router = useRouter();
@@ -64,13 +84,30 @@ const courseNo = route.params.courseNo;
 const assignment = ref({});
 const fileName = ref('');
 const previewVisible = ref(false);
+const userType = ref('');
+const tasks = ref([]);
+
+const fetchUserType = async () => {
+  try {
+    let result = await getUsernameService();
+    if(result.status === 200) {
+      userType.value = result.data.userType;
+    }
+  } catch (err) {
+    ElMessage.error('获取用户信息失败');
+    console.log(err);
+  }
+}
+fetchUserType();
 
 const fetchAssignment = async () => {
     try {
         let result = await assignmentSearchService(courseNo, assignmentId);
         if(result.status === 200){
             assignment.value = result.data.data;
-            fileName.value = assignment.value.assignment_file.split('/').pop();
+            if(assignment.value.assignment_file){
+              fileName.value = assignment.value.assignment_file.split('/').pop();
+            }
         }
     } catch (err){
         ElMessage.error('获取作业信息失败');
@@ -78,6 +115,20 @@ const fetchAssignment = async () => {
     }
 }
 fetchAssignment();
+
+const fetchTasks = async () => {
+  try {
+    let result = await mutualListService(assignmentId);
+    if(result.status === 200) {
+      tasks.value = result.data.data;
+      console.log(tasks)
+    }
+  } catch (err) {
+    ElMessage.error('获取互评任务失败');
+    console.log(err);
+  }
+}
+fetchTasks();
 
 const goBack = () => {
     router.go(-1);
@@ -90,6 +141,16 @@ const downloadFile = () => {
     link.download = assignment.value.assignment_file.split('/').pop(); 
     link.click();
 }
+
+const goToCommittedDetail = (committed) => {
+    router.push({
+      name:'CommittedDetail', 
+      params:{
+        courseNo:courseNo,
+        assignmentId:committed.assignment_id,
+        sno:committed.student_id,
+      }});
+  }
 
 </script>
 

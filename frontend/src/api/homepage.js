@@ -28,7 +28,11 @@ export const assignmentUpdateService = (courseNo,assignmentData) => {
 }
 
 export const assignmentSearchService = (courseNo,assignmentId) => {
-    return request.get(`${API_URL}/course/${courseNo}/assignment/${assignmentId}/`);
+    return request.get(`${API_URL}/course/${courseNo}/oneAssignment/`,{
+        params:{
+            assignment_id:assignmentId
+        }
+    });
 }
 
 export const assignmentCommitService = (courseNo,assignmentId,assignmentData) => {
@@ -49,6 +53,22 @@ export const manageListService = (courseNo,assignmentId) => {
 
 export const mutualAddService = (assignmentId) => {
     return request.post(`${API_URL}/${assignmentId}/generateMutualAssessment`);
+}
+
+export const readOverAddService = (courseNo,assignmentId,sno,readOverData) => {
+    return request.post(`${API_URL}/course/${courseNo}/assignment/${assignmentId}/student/${sno}/TeacherAssignment`,readOverData)
+}
+
+export const readOverSearchService = (courseNo,assignmentId,sno) => {
+    return request.get(`${API_URL}/course/${courseNo}/assignment/${assignmentId}/student/${sno}/TeacherAssignment`)
+}
+
+export const mutualListService = (assignmentId) => {
+    return request.get(`${API_URL}/${assignmentId}/mutualAssessment`)
+}
+
+export const mutualCommitService = (assignmentId,mutualData) => {
+    return request.post(`${API_URL}/${assignmentId}/mutualAssessment`,mutualData)
 }
 
 //课程资源

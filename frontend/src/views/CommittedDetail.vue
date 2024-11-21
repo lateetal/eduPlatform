@@ -15,7 +15,7 @@
 
           <div class="info-item">
             <label>提交时间</label>
-            <span>{{ committed.submitted_at.split('.')[0] }}</span>
+            <span v-if="committed.submitted_at">{{ committed.submitted_at.split('.')[0] }}</span>
           </div>
 
           <div class="info-item" v-if="committed.delay_time">
@@ -49,15 +49,46 @@
             />
           </div>
 
-          <div class="info-item">
-            <label>提交时间：</label>
-            <span>{{  }}</span>
-          </div>
         </div>
 
         <div class="actions">
-          <el-button type="primary" @click="goBack">关闭</el-button>
+          <el-button v-if="userType==='teacher'" type="primary" @click="readOverDialog" >批阅</el-button>
+          <el-button v-if="sno === username" type="primary" @click="readOverViewDialog">查看批阅</el-button>
+          <el-button v-if="userType==='student' && sno !== username" type="primary" @click="mutualDialog">互评</el-button>
+          <el-button type="info" @click="goBack">关闭</el-button>
         </div>
+
+        <el-dialog
+          v-model="readOverDialogVisible"
+          :title="dialogTitle"
+          width="50%"
+        >
+          <el-form :model="readOverForm" label-width="120px">
+            <el-form-item label="成绩">
+              <el-input-number 
+                v-model="readOverForm.grade" 
+                :min="0" 
+                :max="assignment.maxGrade" 
+                :disabled="sno === username"
+              />
+            </el-form-item>
+            <el-form-item label="反馈">
+              <el-input v-model="readOverForm.feedback" :disabled="sno === username" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <span v-if="committed.student_id !== username" class="dialog-footer">
+              <el-button @click="readOverDialogVisible = false">取消</el-button>
+              <el-button v-if="userType==='teacher'" type="primary" @click="readOver()">
+                确认
+              </el-button>
+              <el-button v-if="userType==='student'" type="primary" @click="mutualCommit()">
+                确认
+              </el-button>
+            </span>
+          </template>
+        </el-dialog>
+
       </div>
 </template>
 
@@ -66,8 +97,12 @@ import {ref} from 'vue';
 import { useRoute,useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import VuePdfEmbed from 'vue-pdf-embed';
-import { assignmentSearchService,
-        committedViewService,} from '@/api/homepage';
+import {getUsernameService, 
+        assignmentSearchService,
+        committedViewService,
+        readOverAddService,
+        readOverSearchService,
+        mutualCommitService} from '@/api/homepage';
 
 const route = useRoute();
 const router = useRouter();
@@ -79,6 +114,28 @@ const assignment = ref({});
 const fileName = ref('');
 const previewVisible = ref(false);
 const committed = ref({});
+const username = ref('');
+const userType = ref('');
+const readOverDialogVisible = ref(false);
+const readOverForm = ref({
+  grade:'',
+  feedback:'',
+});
+const dialogTitle = ref('');
+
+const fetchUsername = async() => {
+  try {
+    let result = await getUsernameService();
+    if(result.status === 200) {
+      username.value = result.data.username;
+      userType.value = result.data.userType;
+    }
+  } catch (err) {
+    ElMessage.error('获取用户信息失败');
+    console.log(err);
+  }
+}
+fetchUsername();
 
 const fetchAssignment = async () => {
     try {
@@ -98,7 +155,10 @@ const fetchCommitted = async () => {
         let result = await committedViewService(courseNo,assignmentId,sno);
         if(result.status === 200) {
             committed.value = result.data.data;
-            fileName.value = committed.value.submission_file.split('/').pop();
+            if(committed.value.submission_file){
+              fileName.value = committed.value.submission_file.split('/').pop();
+            }
+            
         }
     } catch (err) {
         ElMessage.error('获取已提交作业失败');
@@ -115,8 +175,77 @@ const downloadFile = () => {
     const downloadUrl = BUCKET_URL + committed.value.submission_file;
     const link = document.createElement('a');
     link.href = downloadUrl;
-    link.download = committed.value.submission_file.split('/').pop(); 
+    link.download = fileName.value;
     link.click();
+}
+
+const readOverDialog = () => {
+  readOverForm.value.grade = '';
+  readOverForm.value.feedback = '';
+  dialogTitle.value = '批阅';
+  readOverDialogVisible.value = true;
+}
+
+const readOver = async() => {
+  const formData = new FormData();
+  formData.append('grade',readOverForm.value.grade);
+  formData.append('feedback',readOverForm.value.feedback);
+  formData.append('show_feedback',1);
+  try {
+    let result = await readOverAddService(courseNo,assignmentId,sno,formData);
+    if(result.status === 201) {
+      ElMessage.success('批阅成功');
+      fetchCommitted();
+    }
+  } catch (err) {
+    ElMessage.error('批阅失败');
+    console.log(err);
+  }
+  readOverDialogVisible.value = false;
+}
+const feedbacks = ref({});
+const fetchReadOver = async () => {
+  try {
+    let result = await readOverSearchService(courseNo,assignmentId,sno);
+    if(result.status === 200) {
+      feedbacks.value = result.data.data;
+    }
+  } catch (err) {
+    ElMessage.error('获取反馈失败');
+    console.log(err);
+  }
+}
+
+const readOverViewDialog = async () => {
+  await fetchReadOver();
+  readOverForm.value.grade = feedbacks.value.grade;
+  readOverForm.value.feedback = feedbacks.value.feedback;
+  dialogTitle.value = '查看批阅';
+  readOverDialogVisible.value = true;
+}
+
+const mutualDialog = async () => {
+  readOverForm.value.grade = '';
+  readOverForm.value.feedback = '';
+  dialogTitle.value = '互评';
+  readOverDialogVisible.value= true;
+}
+
+const mutualCommit = async() => {
+  const formData = new FormData();
+  formData.append('toAssessStudentId',committed.value.student_id);
+  formData.append('grade',readOverForm.value.grade);
+  formData.append('feedback',readOverForm.value.feedback);
+  try {
+    let result = await mutualCommitService(assignmentId,formData);
+    if(result.status === 200) {
+      ElMessage.success('互评作业成功');
+    }
+  } catch (err) {
+    ElMessage.error('互评作业失败');
+    console.log(err);
+  }
+  readOverDialogVisible.value = false;
 }
 
 </script>
