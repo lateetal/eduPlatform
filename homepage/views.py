@@ -745,7 +745,7 @@ class generateMutualAssessment(APIView):
         assignment = Assignment.objects.get(pk=assignment_id)
 
         # 如果作业没有提交或者人数太少，无法生成互评
-        if submissions.count() < 2:
+        if submissions.count() < 3:
             return Response({'error': '作业提交人数过少，无法生成互评'}, status=status.HTTP_404_NOT_FOUND)
 
         students = [submission.student for submission in submissions]
@@ -784,7 +784,7 @@ class MutualAssessmentView(APIView):
         username = User.objects.get(id=user_id).username
 
         # 获取当前用户的互评记录
-        mutual_assessments = MutualAssessment.objects.filter(assignment_id=assignment_id, student_id=username)
+        mutual_assessments = MutualAssessment.objects.filter(assignment_id=assignment_id, student_id=username,is_assessed=False)
 
         if not mutual_assessments.exists():
             return Response({'code': 404, 'message': '没有互评记录'}, status=status.HTTP_404_NOT_FOUND)
