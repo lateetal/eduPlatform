@@ -2,7 +2,7 @@
 <div class="exercises-container">
     <div class="header">
         <div class="tabs">
-            <button v-if="props.userType==='teacher'" class="tab active" @click="dialogVisible = true">上传试卷</button>
+            <button v-if="props.userType==='teacher'" class="tab active" @click="uploadForm.file='';dialogVisible = true">上传试卷</button>
         </div>
         <div class="search">
             <input type="text" placeholder="搜索习题关键字" class="search-input" />

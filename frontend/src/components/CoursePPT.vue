@@ -28,7 +28,7 @@
       <div class="content-area">
         <div class="action-buttons" v-if="userType === 'teacher'">
           <el-button type="primary" @click="uploadDialogVisible = true">上传文件</el-button>
-          <el-button type="success" @click="newFolderDialogVisible = true">新建目录</el-button>
+          <el-button type="success" @click="newFolderForm.name='';newFolderDialogVisible = true">新建目录</el-button>
           <el-button type="info" @click="deleteFolderDialogVisible = true">删除文件夹</el-button>
         </div>
   

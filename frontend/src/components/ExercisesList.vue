@@ -125,7 +125,7 @@
             </el-form-item>
 
             <el-form-item v-else label="答案">
-                <el-input v-mdoel="exerciseForm.answer_explanation" placeholder="请输入答案" autosize />
+                <el-input v-model="exerciseForm.answer_explanation" placeholder="请输入答案" autosize />
             </el-form-item>
 
         </el-form>

@@ -193,9 +193,9 @@ const readOver = async() => {
   formData.append('show_feedback',1);
   try {
     let result = await readOverAddService(courseNo,assignmentId,sno,formData);
-    if(result.status === 201) {
+    if(result.status === 200) {
       ElMessage.success('批阅成功');
-      fetchCommitted();
+      await fetchCommitted();
     }
   } catch (err) {
     ElMessage.error('批阅失败');
