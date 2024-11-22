@@ -42,7 +42,7 @@ class CourseMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CourseMessage
-        fields = ('mno', 'mcourse', 'msend', 'mtime', 'mtitle', 'minfo', 'coursename')
+        fields = ('mno', 'mcourse_id', 'msend', 'mtime', 'mtitle', 'minfo', 'coursename')
 
 class CourseMessageStatusSerializer(serializers.ModelSerializer):
     # 嵌套序列化器用于获取 CourseMessage 的字段
@@ -52,10 +52,15 @@ class CourseMessageStatusSerializer(serializers.ModelSerializer):
     minfo = serializers.CharField(source='mno.minfo', read_only=True)
     coursename = serializers.CharField(source='course.cname', read_only=True)
     status = serializers.BooleanField()
+    cno = serializers.SerializerMethodField()
+
 
     class Meta:
         model = CourseMessageStatus
-        fields = ['mno', 'mtime', 'mtitle', 'minfo', 'coursename', 'status']
+        fields = ['mno', 'mtime', 'mtitle', 'minfo', 'coursename', 'status', 'cno']
+    def get_cno(self, obj):
+        cno = CourseMessage.objects.get(mno=obj.mno_id).mcourse_id
+        return cno
 
 #lzy部分学生课程资源作业部分
 class StudentSerializer(serializers.ModelSerializer):

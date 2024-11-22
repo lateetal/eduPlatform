@@ -168,7 +168,8 @@ const fetchCommitted = async () => {
 fetchCommitted();
 
 const goBack = () => {
-    router.go(-1);
+  localStorage.setItem('selectedTab', 'homework');
+  router.go(-1);
 }
 
 const downloadFile = () => {

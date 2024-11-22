@@ -54,7 +54,7 @@
           </h2>
           <ul v-if="notifications.length > 0" class="notification-list">
             <li v-for="notification in notifications" :key="notification.id">
-              <span class="notification-title">{{ notification.mtitle }}</span>
+              <span class="notification-title" @click="goToNotice(notification)">{{ notification.mtitle }}</span>
               <span class="notification-info">{{ notification.minfo }}</span>
               <span class="notification-date">{{ formatDate(notification.mtime) }}</span>
             </li>
@@ -179,6 +179,10 @@ export default {
             const date = new Date(dateString);
             return date.toISOString().split('T')[0]; // 只返回日期部分
     },
+    goToNotice(notification){
+      localStorage.setItem('selectedTab', 'notice');
+      this.$router.push(`/course/${notification.cno}/`)
+    }
   }
 }
 </script>

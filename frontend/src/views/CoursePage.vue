@@ -90,7 +90,7 @@
 import CourseHeader from '@/components/CourseHeader.vue';
 import CourseSidebar from '@/components/CourseSidebar.vue';
 import CourseContent from '@/components/CourseContent.vue';
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch,onBeforeMount } from 'vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
@@ -169,6 +169,7 @@ export default {
 
     const handleSelect = (key) => {
       selectedTab.value = key;
+      localStorage.setItem('selectedTab', key);
     };
 
     const showUploadDialog = () => {
@@ -287,7 +288,12 @@ export default {
       }
     };
 
-    
+    onBeforeMount(() => {
+      const savedTab = localStorage.getItem('selectedTab');
+      if (savedTab) {
+        selectedTab.value = savedTab;
+      }
+    });
 
     onMounted(() => {
       fetchUsername();
@@ -301,6 +307,13 @@ export default {
         fetchMessages();
       } else if (newTab === 'student') {
         fetchAllStudent();
+      }
+    });
+
+    watch(() => route.params, () => {
+      const savedTab = localStorage.getItem('selectedTab');
+      if (savedTab) {
+        selectedTab.value = savedTab;
       }
     });
 

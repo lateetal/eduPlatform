@@ -124,14 +124,15 @@ const fetchTasks = async () => {
       console.log(tasks)
     }
   } catch (err) {
-    ElMessage.error('获取互评任务失败');
+    //ElMessage.error('获取互评任务失败');
     console.log(err);
   }
 }
 fetchTasks();
 
 const goBack = () => {
-    router.go(-1);
+  localStorage.setItem('selectedTab', 'homework');  
+  router.go(-1);
 }
 
 const downloadFile = () => {

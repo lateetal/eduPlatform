@@ -277,9 +277,25 @@
     submission_text:'',
   })
   const commitAssignment = ref({});
-  const committeds = ref({});
+  const committeds = ref([]);
   const showManagePage = ref(false);
   const mutualDialogVisible = ref(false);
+  const fetchHomeworks = async () => {
+    try{
+      let result = await assignmentListService(props.courseNo);
+      if(result.status === 200){
+        homeworks.value = result.data.data;
+      } else if(result.status === 404){
+        homeworks.value = [];
+      }
+      
+    } catch(err){
+      console.log(err);
+    }   
+  }
+
+  fetchHomeworks();
+
 
   const fetchCommitteds = async () => {
     if(props.userType === 'student') {
@@ -296,21 +312,7 @@
   }
   fetchCommitteds();
 
-  const fetchHomeworks = async () => {
-    try{
-      let result = await assignmentListService(props.courseNo);
-      if(result.status === 200){
-        homeworks.value = result.data.data;
-      } else if(result.status === 404){
-        homeworks.value = [];
-      }
-      
-    } catch(err){
-      console.log(err);
-    }   
-  }
-
-  fetchHomeworks();
+  
 
   const clearHomeworkForm = () => {
     homeworkForm.value = {

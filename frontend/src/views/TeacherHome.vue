@@ -172,7 +172,8 @@ export default {
     },
 
     goToNotice(notification){
-      this.$router.push(`/course/${notification.mcourse}/`)
+      localStorage.setItem('selectedTab', 'notice');
+      this.$router.push(`/course/${notification.mcourse_id}/`)
     }
 
   }
