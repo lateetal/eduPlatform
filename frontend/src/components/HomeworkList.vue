@@ -22,13 +22,13 @@
           <el-table-column prop="due_date" label="截止时间" width="180" />
           <el-table-column v-if="userType==='student'" label="提交时间" width="180">
             <template #default="scope">
-              <span v-if="committeds.some(item => item.assignment_id === scope.row.id)">{{ committeds.find(item => item.assignment_id === scope.row.id).submitted_at.split('.')[0] }}</span>
+              <span v-if="committeds?.some(item => item.assignment_id === scope.row.id)">{{ committeds.find(item => item.assignment_id === scope.row.id).submitted_at.split('.')[0] }}</span>
               <span v-else>未提交</span>
             </template>
           </el-table-column>
           <el-table-column v-if="userType==='student'" label="分数" width="100">
             <template #default="scope">
-              <span v-if="committeds.some(item => item.assignment_id === scope.row.id)">{{ committeds.find(item => item.assignment_id === scope.row.id).grade === -1 ? '未评': committeds.find(item => item.assignment_id === scope.row.id).grade}}</span>
+              <span v-if="committeds?.some(item => item.assignment_id === scope.row.id)">{{ committeds.find(item => item.assignment_id === scope.row.id).grade === -1 ? '未评': committeds.find(item => item.assignment_id === scope.row.id).grade}}</span>
               <span v-else>未提交</span>
             </template>
           </el-table-column>
@@ -51,9 +51,9 @@
                 提交
               </el-button>
               <el-button 
-                v-if="userType==='student' && committeds.some(item => item.assignment_id === scope.row.id)" 
+                v-if="userType==='student' && committeds?.some(item => item.assignment_id === scope.row.id)"
                 type="info"
-                @click="goToCommittedDetail(committeds.find(item => item.assignment_id === scope.row.id))"
+                @click="goToCommittedDetail(committeds?.find(item => item.assignment_id === scope.row.id))"
               >
                 查看
               </el-button>
@@ -443,7 +443,11 @@
       let result = await assignmentCommitService(props.courseNo,commitAssignment.value.id,formData);
       if(result.status === 201){
         ElMessage.success('提交作业成功');
-        fetchHomeworks();
+        await fetchHomeworks();
+      } else if (result.status === 200) {
+        ElMessage.success('覆盖作业成功');
+      } else if(result.status === 205){
+        ElMessage.warning('逾期不能提交');
       }
     } catch (err) {
       ElMessage.error('提交作业失败');

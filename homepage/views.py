@@ -528,9 +528,9 @@ class AssignmentSubmissionView(APIView):
             current_time = timezone.now()
 
             # 如果作业没有允许延迟提交，并且当前时间超过了 `delay_date`
-            if not assignment.allowDelaySubmission and current_time > assignment.delay_date:
+            if not assignment.allowDelaySubmission :
                 return Response({'error': 'You cannot submit this assignment, the deadline has passed.'},
-                                status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_205_RESET_CONTENT)
 
             # 查找是否已有提交记录
             try:
@@ -644,6 +644,8 @@ class CreateAssignmentView(APIView):
 
             assignment_file = request.FILES.get('assignment_file', None)
 
+            if due_date < start_date:
+                return Response({"error": "Due date cannot be earlier than start date."},  status=status.HTTP_205_RESET_CONTENT)
 
             # 如果有文件，上传到阿里云OSS
             file_path = ''
