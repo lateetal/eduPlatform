@@ -159,13 +159,6 @@ AUTHENTICATION_BACKENDS = [
 #登录重定向
 LOGIN_REDIRECT_URL = '/dashboard/'
 
-#阿里云oss配置
-
-accessKeyId = 'LTAI5tAtNfQg5VqN22gT3Tsn'
-accessKeySecret = 'Mqha28ubnHLtRlZaaDhXiqz6O9Xnwf'
-auth = oss2.Auth(accessKeyId, accessKeySecret)
-endpoint = 'http://oss-cn-beijing.aliyuncs.com'
-bucketName = 'edu-platform-2024'
 
 
 bucket = oss2.Bucket(auth,endpoint,bucketName)
