@@ -528,7 +528,7 @@ class AssignmentSubmissionView(APIView):
             current_time = timezone.now()
 
             # 如果作业没有允许延迟提交，并且当前时间超过了 `delay_date`
-            if not assignment.allowDelaySubmission :
+            if not assignment.allowDelaySubmission and assignment.due_date < current_time:
                 return Response({'error': 'You cannot submit this assignment, the deadline has passed.'},
                                 status=status.HTTP_205_RESET_CONTENT)
 
