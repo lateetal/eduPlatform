@@ -10,7 +10,7 @@
         <el-table :data="homeworks" style="width: 100%">
           <el-table-column label="作业标题" width="200">
             <template #default="scope">
-              <router-link :to="{name:'AssignmentDetail',params:{courseNo:props.courseNo,assignmentId:scope.row.id}}">{{ scope.row.title }}</router-link>
+              <span class="homework-title" @click="goToAssignmentDetail(scope.row)">{{ scope.row.title }}</span>
             </template>
           </el-table-column>
           <el-table-column label="提交人数" width="100">
@@ -457,15 +457,29 @@
     }
     commitDialogVisible.value = false;
   }
-
-  const goToCommittedDetail = (committed) => {
-    router.push({
-      name:'CommittedDetail', 
+  const goToAssignmentDetail = (assignment) => {
+    const url=router.resolve({
+      name:'AssignmentDetail',
       params:{
         courseNo:props.courseNo,
-        assignmentId:committed.assignment_id,
-        sno:committed.student_id,
-      }});
+        assignmentId:assignment.id,
+      },
+    }).href;
+    window.open(url, '_blank');
+  }
+
+  const goToCommittedDetail = (committed) => {
+    const url = router.resolve({
+      name: 'CommittedDetail',
+      params: {
+        courseNo: props.courseNo,
+        assignmentId: committed.assignment_id,
+        sno: committed.student_id,
+      },
+    }).href; // 获取目标 URL
+
+    // 使用 window.open 打开新标签页
+    window.open(url, '_blank');
   }
 
   const manageAssignment = (assignment) => {
@@ -558,5 +572,11 @@
 
 .assignment-details p {
   margin-bottom: 20px;
+}
+
+.homework-title:hover {
+  color: #4769ff; 
+  font-weight: bold; 
+  cursor: pointer;  
 }
   </style>

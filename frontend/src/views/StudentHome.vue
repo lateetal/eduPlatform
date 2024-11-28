@@ -94,6 +94,9 @@ instance.interceptors.request.use(config => {
 export default {
   components:{User, TopRight},
   name: 'StudentHome',
+  created(){
+    localStorage.setItem('selectedTab','introduction');
+  },
   data() {
     return {
       subjects: [],
@@ -182,7 +185,7 @@ export default {
     goToNotice(notification){
       localStorage.setItem('selectedTab', 'notice');
       this.$router.push(`/course/${notification.cno}/`)
-    }
+    },
   }
 }
 </script>
