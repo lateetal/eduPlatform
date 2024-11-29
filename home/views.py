@@ -45,9 +45,7 @@ class modifyInformation(APIView):
             new_Smail = request.data.get('mail')
             student.smail = new_Smail
             student.save()
-            # 将请求的数据传递给学生序列化器进行更新
-            ser = StudentSerializer(student)  # partial=True 允许部分更新
-            return Response({"code": 200, "data": ser.data})
+            return Response({"code": 200})
 
         elif user_type == 'teacher':
             # 获取教师对象
@@ -64,8 +62,7 @@ class modifyInformation(APIView):
             teacher.tintro = new_Tintro
 
             teacher.save()
-            ser = TeacherSerializer(teacher)  # partial=True 允许部分更新
-            return Response({"code":200,"data":ser.data})
+            return Response({"code":200})
 
         # 验证数据是否有效
         if serializer.is_valid():

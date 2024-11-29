@@ -93,9 +93,12 @@ WSGI_APPLICATION = 'eduPlatform.wsgi.application'
 DATABASES = {
     'default': {#配置自己的数据库
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'edu',
+        'NAME': 'edu_test',
         'USER':'root',
         'PASSWORD':'yumu1412',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 
