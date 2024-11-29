@@ -94,7 +94,7 @@
 
 <script setup>
 import {ref} from 'vue';
-import { useRoute,useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import VuePdfEmbed from 'vue-pdf-embed';
 import {getUsernameService, 
@@ -105,7 +105,6 @@ import {getUsernameService,
         mutualCommitService} from '@/api/homepage';
 
 const route = useRoute();
-const router = useRouter();
 const BUCKET_URL = 'https://edu-platform-2024.oss-cn-beijing.aliyuncs.com/';
 const assignmentId = route.params.assignmentId;
 const courseNo = route.params.courseNo;
@@ -168,8 +167,7 @@ const fetchCommitted = async () => {
 fetchCommitted();
 
 const goBack = () => {
-  localStorage.setItem('selectedTab', 'homework');
-  router.go(-1);
+  window.close();
 }
 
 const downloadFile = () => {

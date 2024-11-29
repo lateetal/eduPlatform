@@ -131,8 +131,7 @@ const fetchTasks = async () => {
 fetchTasks();
 
 const goBack = () => {
-  localStorage.setItem('selectedTab', 'homework');  
-  router.go(-1);
+  window.close();
 }
 
 const downloadFile = () => {
