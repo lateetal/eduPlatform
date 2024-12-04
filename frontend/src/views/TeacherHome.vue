@@ -106,6 +106,7 @@ export default {
     this.fetchSubjects();
     this.fetchUsername();
     this.fetchCourseMessage(); 
+    this.initSelectedTab();
   },
   methods: {
     async fetchSubjects() {
@@ -174,6 +175,10 @@ export default {
     goToNotice(notification){
       localStorage.setItem('selectedTab', 'notice');
       this.$router.push(`/course/${notification.mcourse_id}/`)
+    },
+
+    initSelectedTab(){
+      localStorage.setItem('selectedTab', 'introduction');
     }
 
   }

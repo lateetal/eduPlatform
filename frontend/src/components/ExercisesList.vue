@@ -18,7 +18,6 @@
             <th>知识点</th>
             <th>题型</th>
             <th>难易</th>
-            <th>创建时间</th>
             <th>操作</th>
             </tr>
         </thead>
@@ -29,7 +28,6 @@
             <td>{{ exercise.knowledge_point }}</td>
             <td>{{ exercise.question_type }}</td>
             <td>{{ exercise.difficulty }}</td>
-            <td>{{ exercise.created_at }}</td>
             <td class="actions">
                 <button class="action-btn edit" @click="viewDialog(exercise)">查看</button>
                 <button v-if="props.userType==='teacher'" class="action-btn delete" @click="deleteExercise(exercise.id)">删除</button>

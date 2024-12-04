@@ -108,6 +108,12 @@ const fetchAssignment = async () => {
             if(assignment.value.assignment_file){
               fileName.value = assignment.value.assignment_file.split('/').pop();
             }
+            if(assignment.value.start_date){
+              assignment.value.start_date = assignment.value.start_date.replace('T',' ');
+            }
+            if(assignment.value.due_date){
+              assignment.value.due_date = assignment.value.due_date.replace('T',' ');
+            }
         }
     } catch (err){
         ElMessage.error('获取作业信息失败');

@@ -38,7 +38,7 @@
               <el-button v-if="userType==='teacher'" type="primary" link @click="manageAssignment(scope.row)">
                 批阅管理
               </el-button>
-              <el-button v-if="userType==='teacher' && scope.row.isMutualAssessment && !scope.row.isPostMutualAssessment" type="primary" link @click="generateMutual(scope.row)">
+              <el-button v-if="userType==='teacher' && scope.row.isMutualAssessment && !scope.row.isPostMutualAssessment && isDelay(scope.row.due_date)" type="primary" link @click="generateMutual(scope.row)">
                 互评任务
               </el-button>
               <el-button v-if="userType==='teacher'" type="primary" link @click="editDialog(scope.row)">
@@ -83,23 +83,23 @@
             />
           </el-form-item>
 
-          <el-form-item label="开始日期">
+          <el-form-item label="开始时间">
             <el-date-picker
               v-model="homeworkForm.start_date"
-              type="date"
+              type="datetime"
               placeholder="选择开始日期"
-              format="YYYY/MM/DD"
-              value-format="YYYY-MM-DD"
+              format="YYYY/MM/DD HH:mm:ss"
+              value-format="YYYY-MM-DD h:m:s"
             />
           </el-form-item>
 
-          <el-form-item label="截止日期">
+          <el-form-item label="截止时间">
             <el-date-picker
               v-model="homeworkForm.due_date"
-              type="date"
+              type="datetime"
               placeholder="选择截止日期"
-              format="YYYY/MM/DD"
-              value-format="YYYY-MM-DD"
+              format="YYYY/MM/DD HH:mm:ss"
+              value-format="YYYY-MM-DD h:m:s"
             />
           </el-form-item>
 
@@ -112,7 +112,7 @@
           </el-form-item>
 
           <el-form-item label="满分">
-            <el-input-number v-model="homeworkForm.maxGrade" :min="1" :max="100" />
+            <el-input-number v-model="homeworkForm.maxGrade" :min="1" />
           </el-form-item>
 
           <el-form-item label="选择文件">
@@ -198,7 +198,7 @@
       <h2>作业批阅/管理</h2>
       <div class="assignment-details">
         <h3>作业标题：{{ managedAssignment.title }}</h3>
-        <p>提交时间：{{ managedAssignment.start_date }} - {{ managedAssignment.due_date }}</p>
+        <p>提交时间：{{ managedAssignment.start_date.replace('T',' ') }} - {{ managedAssignment.due_date.replace('T',' ') }}</p>
         <el-tabs v-model="activeTab">
           <el-tab-pane label="作业批阅/成绩" name="review">
             <el-table :data="submissions.data" style="width: 100%">
@@ -206,7 +206,7 @@
               <el-table-column prop="student_name" label="姓名" />
               <el-table-column label="提交时间">
                 <template #default="scope">
-                  <span>{{scope.row.submitted_at.split('.')[0]}}</span>
+                  <span>{{scope.row.submitted_at.split('.')[0].replace('T',' ')}}</span>
                 </template>
               </el-table-column>
               <el-table-column label="成绩">
@@ -285,6 +285,16 @@
       let result = await assignmentListService(props.courseNo);
       if(result.status === 200){
         homeworks.value = result.data.data;
+        
+        // 时间格式
+        homeworks.value.forEach(item => {
+          if(item.start_date){
+            item.start_date = item.start_date.replace('T', ' ');
+          }
+          if (item.due_date) {
+            item.due_date = item.due_date.replace('T', ' ');
+          }
+        });
       } else if(result.status === 404){
         homeworks.value = [];
       }
@@ -303,6 +313,12 @@
         let result = await committedListService(props.courseNo);
         if(result.status === 200) {
           committeds.value = result.data.data;
+
+          committeds.value.forEach(item => {
+            if(item.submitted_at){
+              item.submitted_at = item.submitted_at.replace('T',' ');
+            }
+          })
         }
       } catch (err) {
         ElMessage.error('获取已提交作业失败');
@@ -333,42 +349,47 @@
   }
   
   const addAssignment = async () => {
-    try {
-      if(homeworkForm.value.isMutualAssessment){
-        homeworkForm.value.isMutualAssessment = 1;
-      } else {
-        homeworkForm.value.isMutualAssessment = 0;
-      }
+    if(homeworkForm.value.maxGrade > 100) {
+      ElMessage.warning('满分不允许超过100');
+    } else {
+      try {
+        if(homeworkForm.value.isMutualAssessment){
+          homeworkForm.value.isMutualAssessment = 1;
+        } else {
+          homeworkForm.value.isMutualAssessment = 0;
+        }
 
-      if(homeworkForm.value.allowDelaySubmission){
-        homeworkForm.value.allowDelaySubmission = 1;
-      } else {
-        homeworkForm.value.allowDelaySubmission = 0;
-      }
-      const formData = new FormData()
-      formData.append('title', homeworkForm.value.title)
-      formData.append('description', homeworkForm.value.description)
-      formData.append('start_date', homeworkForm.value.start_date)
-      formData.append('due_date', homeworkForm.value.due_date)
-      formData.append('isMutualAssessment', homeworkForm.value.isMutualAssessment)
-      formData.append('allowDelaySubmission', homeworkForm.value.allowDelaySubmission)
-      formData.append('maxGrade', homeworkForm.value.maxGrade)
-      formData.append('assignment_file', uploadForm.value.file);
+        if(homeworkForm.value.allowDelaySubmission){
+          homeworkForm.value.allowDelaySubmission = 1;
+        } else {
+          homeworkForm.value.allowDelaySubmission = 0;
+        }
+        const formData = new FormData()
+        formData.append('title', homeworkForm.value.title)
+        formData.append('description', homeworkForm.value.description)
+        formData.append('start_date', homeworkForm.value.start_date)
+        formData.append('due_date', homeworkForm.value.due_date)
+        formData.append('isMutualAssessment', homeworkForm.value.isMutualAssessment)
+        formData.append('allowDelaySubmission', homeworkForm.value.allowDelaySubmission)
+        formData.append('maxGrade', homeworkForm.value.maxGrade)
+        formData.append('assignment_file', uploadForm.value.file);
 
-      const result = await assignmentAddService(props.courseNo, formData)
+        const result = await assignmentAddService(props.courseNo, formData)
 
-      if (result.status === 201) {
-        ElMessage.success('作业布置成功')
-        dialogVisible.value = false
-        clearHomeworkForm()
-        fetchHomeworks()
-      } else {
-        ElMessage.error(result.data.error || '作业布置失败，请重试。')
+        if (result.status === 201) {
+          ElMessage.success('作业布置成功')
+          dialogVisible.value = false
+          clearHomeworkForm()
+          fetchHomeworks()
+        } else {
+          ElMessage.error(result.data.error || '作业布置失败，请重试。')
+        }
+      } catch (error) {
+        console.error('Error adding assignment:', error)
+        ElMessage.error('发生错误，请稍后重试。')
       }
-    } catch (error) {
-      console.error('Error adding assignment:', error)
-      ElMessage.error('发生错误，请稍后重试。')
     }
+    
   }
 
   const handleFileChange = (file) => {
@@ -524,6 +545,11 @@
     }
   }
 
+  const isDelay = (due_date) => {
+    let currentDate = new Date();
+    let dueDate = new Date(due_date);
+    return currentDate > dueDate;
+  }
   
   </script>
   

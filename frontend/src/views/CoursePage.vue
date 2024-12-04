@@ -4,6 +4,7 @@
     <div class="course-content">
       <CourseSidebar 
         :selectedTab="selectedTab" 
+        :userType="userType"
         @select-tab="handleSelect"
       />
       <CourseContent 

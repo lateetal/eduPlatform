@@ -14,7 +14,7 @@
                 <el-menu-item index="outline">教学大纲</el-menu-item>
                 <el-menu-item index="calendar">教学日历</el-menu-item>
                 <el-menu-item index="professor">教师信息</el-menu-item>
-                <el-menu-item index="student">选课学生</el-menu-item>
+                <el-menu-item v-if="userType==='teacher'" index="student">选课学生</el-menu-item>
             </el-sub-menu>
 
           <el-sub-menu index="2">
@@ -66,7 +66,7 @@ import { Location, Folder, ChatDotRound, DataBoard, Bell } from '@element-plus/i
         DataBoard, 
         Bell
     },
-    props: ['selectedTab'],
+    props: ['selectedTab','userType'],
     emits: ['select-tab'],
     setup(props, { emit }) {
       const handleSelect = (key) => {

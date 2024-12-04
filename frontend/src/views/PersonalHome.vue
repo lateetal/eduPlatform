@@ -151,7 +151,7 @@
               <el-collapse v-if="otherFolders.length>0" accordion>
                 <el-collapse-item v-for="folder in otherFolders" :key="folder.fno" @click="getFavor(folder.fno)">
                     <template #title>
-                      <span class="folder-name">{{folder.fname}}</span>
+                      <span class="folder-name">{{ folder.ownerName }}: {{folder.fname}}</span>
                       <div class="folder-btn">
                         <el-button type="primary" @click="delFavoredFolder(folder.fno)">
                           <el-icon><Delete /></el-icon>

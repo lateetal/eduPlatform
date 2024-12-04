@@ -32,7 +32,6 @@
             <span class="post-time">发表于：{{ formatDate(discussion.postTime) }}</span>
             <span class="like_num">点赞数：{{ discussion.like }}</span>
           </div>
-          <p v-if="discussion.havePic" class="has-image">此帖有图片</p>
 
           <!-- 展示图片 -->
           <div v-if="discussion.pictures && discussion.pictures.length" class="image-gallery">

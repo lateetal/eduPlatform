@@ -15,7 +15,7 @@
 
           <div class="info-item">
             <label>提交时间</label>
-            <span v-if="committed.submitted_at">{{ committed.submitted_at.split('.')[0] }}</span>
+            <span v-if="committed.submitted_at">{{ committed.submitted_at.split('.')[0].replace('T',' ') }}</span>
           </div>
 
           <div class="info-item" v-if="committed.delay_time">
@@ -64,11 +64,13 @@
           width="50%"
         >
           <el-form :model="readOverForm" label-width="120px">
+            <el-form-item label="满分">
+              <span>{{ assignment.maxGrade }}</span>
+            </el-form-item>
             <el-form-item label="成绩">
               <el-input-number 
                 v-model="readOverForm.grade" 
                 :min="0" 
-                :max="assignment.maxGrade" 
                 :disabled="sno === username"
               />
             </el-form-item>
@@ -80,10 +82,10 @@
             <span v-if="committed.student_id !== username" class="dialog-footer">
               <el-button @click="readOverDialogVisible = false">取消</el-button>
               <el-button v-if="userType==='teacher'" type="primary" @click="readOver()">
-                确认
+                确认批阅
               </el-button>
               <el-button v-if="userType==='student'" type="primary" @click="mutualCommit()">
-                确认
+                确认互评
               </el-button>
             </span>
           </template>
@@ -186,21 +188,26 @@ const readOverDialog = () => {
 }
 
 const readOver = async() => {
-  const formData = new FormData();
-  formData.append('grade',readOverForm.value.grade);
-  formData.append('feedback',readOverForm.value.feedback);
-  formData.append('show_feedback',1);
-  try {
-    let result = await readOverAddService(courseNo,assignmentId,sno,formData);
-    if(result.status === 200) {
-      ElMessage.success('批阅成功');
-      await fetchCommitted();
+  if(readOverForm.value.grade > assignment.value.maxGrade){
+    ElMessage.warning('成绩超过满分');
+  } else {
+    const formData = new FormData();
+    formData.append('grade',readOverForm.value.grade);
+    formData.append('feedback',readOverForm.value.feedback);
+    formData.append('show_feedback',1);
+    try {
+      let result = await readOverAddService(courseNo,assignmentId,sno,formData);
+      if(result.status === 200) {
+        ElMessage.success('批阅成功');
+        await fetchCommitted();
+      }
+    } catch (err) {
+      ElMessage.error('批阅失败');
+      console.log(err);
     }
-  } catch (err) {
-    ElMessage.error('批阅失败');
-    console.log(err);
+    readOverDialogVisible.value = false;
   }
-  readOverDialogVisible.value = false;
+  
 }
 const feedbacks = ref({});
 const fetchReadOver = async () => {
@@ -231,20 +238,24 @@ const mutualDialog = async () => {
 }
 
 const mutualCommit = async() => {
-  const formData = new FormData();
-  formData.append('toAssessStudentId',committed.value.student_id);
-  formData.append('grade',readOverForm.value.grade);
-  formData.append('feedback',readOverForm.value.feedback);
-  try {
-    let result = await mutualCommitService(assignmentId,formData);
-    if(result.status === 200) {
-      ElMessage.success('互评作业成功');
+  if(readOverForm.value.grade > assignment.value.maxGrade){
+    ElMessage.warning('成绩超过满分');
+  } else {
+    const formData = new FormData();
+    formData.append('toAssessStudentId',committed.value.student_id);
+    formData.append('grade',readOverForm.value.grade);
+    formData.append('feedback',readOverForm.value.feedback);
+    try {
+      let result = await mutualCommitService(assignmentId,formData);
+      if(result.status === 200) {
+        ElMessage.success('互评作业成功');
+      }
+    } catch (err) {
+      ElMessage.error('互评作业失败');
+      console.log(err);
     }
-  } catch (err) {
-    ElMessage.error('互评作业失败');
-    console.log(err);
+    readOverDialogVisible.value = false;
   }
-  readOverDialogVisible.value = false;
 }
 
 </script>
