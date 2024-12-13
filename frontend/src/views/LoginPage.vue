@@ -70,12 +70,12 @@
       },
 
       async handleSubmit() {
-        if (this.captchaInput === this.captcha) {
-          this.captchaError = false;
-        } else {
-          this.captchaError = true;
-          ElMessage.error('验证码不正确')
-        }
+        // if (this.captchaInput === this.captcha) {
+        //   this.captchaError = false;
+        // } else {
+        //   this.captchaError = true;
+        //   ElMessage.error('验证码不正确')
+        // }
         if(this.captchaError === false){
           try {
             const response = await axios.post('http://localhost:8000/login/api/token/', {

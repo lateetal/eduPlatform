@@ -5,8 +5,8 @@
             <button v-if="props.userType==='teacher'" class="tab active" @click="dialogTitle = '新建习题';dialogVisible = true">新建习题</button>
         </div>
         <div class="search">
-            <input type="text" placeholder="搜索习题关键字" class="search-input" />
-            <button class="search-btn">搜索</button>
+            <input type="text" v-model="searchKeyword" placeholder="搜索习题关键字" class="search-input" />
+            <button class="search-btn" @click="filterExercises">搜索</button>
         </div>
     </div>
 
@@ -22,7 +22,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="(exercise,index) in exercises" :key="index">
+            <tr v-for="(exercise,index) in filteredExercises" :key="index">
             <td>{{ index + 1 }}</td>
             <td>{{ exercise.content }}</td>
             <td>{{ exercise.knowledge_point }}</td>
@@ -159,6 +159,8 @@ const props = defineProps({
     },
 })
 
+const searchKeyword = ref('');
+const filteredExercises = ref([]);
 const exercises = ref([]);
 const dialogVisible = ref(false);
 const dialogTitle = ref('');
@@ -210,6 +212,7 @@ const fetchExercises = async () => {
         let result = await exerciseListService(props.courseNo,'all');
         if(result.status === 200) {
             exercises.value = result.data.data;
+            filteredExercises.value = exercises.value;
         }
     } catch (err) {
         console.log(err);
@@ -294,6 +297,17 @@ const viewDialog = (exercise) => {
         exerciseForm.value.correct_answer = arr;
     }
     dialogVisible.value = true;
+}
+
+const filterExercises = () => {
+    if(searchKeyword.value.trim() === ''){
+        filteredExercises.value = exercises.value;
+    } else {
+        filteredExercises.value = exercises.value.filter(exercise => {
+            return exercise.content.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+                       exercise.knowledge_point.toLowerCase().includes(searchKeyword.value.toLowerCase());
+        });
+    }
 }
 
 watch(

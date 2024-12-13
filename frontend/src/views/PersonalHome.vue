@@ -113,7 +113,7 @@
             
             <div class="folder-list">
               <el-collapse v-if="folders.length > 0" accordion>
-                <el-collapse-item v-for="folder in folders" :key="folder.fno" @click="getFavor(folder.fno)">
+                <el-collapse-item v-for="folder in folders" :key="folder.fno" @click="getFavor(folder.fno,0)">
                     <template #title>
                       <span class="folder-name">{{folder.fname}}</span>
                       <div class="folder-btn">
@@ -123,10 +123,10 @@
                           active-text="公开"
                           disabled
                         />
-                        <el-button type="primary" @click="editFolderDialog(folder)">
+                        <el-button type="primary" @click.stop="editFolderDialog(folder)">
                           <el-icon><Edit /></el-icon>
                         </el-button>
-                        <el-button type="primary" @click="deleteFolderDialog(folder)">
+                        <el-button type="primary" @click.stop="deleteFolderDialog(folder)">
                           <el-icon><Delete /></el-icon>
                         </el-button>
                       </div>
@@ -147,13 +147,13 @@
             </div>
 
             <div class="other-folders">
-              <h2>收藏的收藏夹</h2>
+              <h2>他人的收藏夹</h2>
               <el-collapse v-if="otherFolders.length>0" accordion>
-                <el-collapse-item v-for="folder in otherFolders" :key="folder.fno" @click="getFavor(folder.fno)">
+                <el-collapse-item v-for="folder in otherFolders" :key="folder.fno" @click="getFavor(folder.fno,1)">
                     <template #title>
-                      <span class="folder-name">{{ folder.ownerName }}: {{folder.fname}}</span>
+                      <span class="folder-name" @click.stop="goToUser(folder.ownerName)">{{ folder.ownerName }}: {{folder.fname}}</span>
                       <div class="folder-btn">
-                        <el-button type="primary" @click="delFavoredFolder(folder.fno)">
+                        <el-button type="primary" @click.stop="delFavoredFolder(folder.fno)">
                           <el-icon><Delete /></el-icon>
                         </el-button>
                       </div>
@@ -530,14 +530,14 @@
       }
     };
 
-    const getFavor = async (fno) => {
+    const getFavor = async (fno,type) => {
       const API_URL = `http://localhost:8000/chatRoom/folder/${fno}`;
       try{
         const response = await instance.get(API_URL);
         if(response.status === 200 ){
-          if(folders.value.filter(item => item.fno === fno)){
+          if(!type){
             folderDiscussions.value = response.data.data.favorites;
-          }else if(otherFolders.value.filter(item => item.fno === fno)){
+          } else {
             otherDiscussions.value = response.data.data.favorites;
           }
         }

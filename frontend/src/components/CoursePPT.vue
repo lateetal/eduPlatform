@@ -230,27 +230,38 @@ const deleteFile = async (file) => {
 
 
 const createFolder = async () => {
-  if (newFolderForm.value.name) {
-    const formData = new FormData()
-    formData.append('folderPath',selectedFolder.value.folderPathInSql + selectedFolder.value.id + '/')
-    formData.append('folderName',newFolderForm.value.name);
-    try {
-      let result = await subfolderAddService(props.courseNo,formData);
-      if(result.status === 200){
-        ElMessage.success('新建文件夹成功');
-        fetchResources();
-        newFolderDialogVisible.value = false;
-      } else {
-        ElMessage.error(result.data.error || '新建文件夹失败')
-      }
-    } catch (err) {
-      ElMessage.error('新建文件夹失败，未定义错误');
-      console.log(err);
+  if(!selectedFolder.value.folderPathInSql){
+    ElMessage.error('请选择目录位置');
+    return;
+  }
+  if(!newFolderForm.value.name){
+    ElMessage.warning('请输入新文件夹名');
+    return;
+  }
+  
+  const formData = new FormData()
+  formData.append('folderPath',selectedFolder.value.folderPathInSql + selectedFolder.value.id + '/')
+  formData.append('folderName',newFolderForm.value.name);
+  try {
+    let result = await subfolderAddService(props.courseNo,formData);
+    if(result.status === 200){
+      ElMessage.success('新建文件夹成功');
+      fetchResources();
+      newFolderDialogVisible.value = false;
+    } else {
+      ElMessage.error(result.data.error || '新建文件夹失败')
     }
+  } catch (err) {
+    ElMessage.error('新建文件夹失败，未定义错误');
+    console.log(err);
   }
 }
 
 const deleteFolder = async () => {
+  if(selectedFolder.value.folderPathInSql === '/' || !selectedFolder.value.folderPathInSql){
+    ElMessage.error('无法删除根目录');
+    return;
+  }
   try{
     let result = await subfolderDeleteService(props.courseNo,selectedFolder.value.id);
     if(result.status === 200){

@@ -5,8 +5,8 @@
             <button v-if="props.userType==='teacher'" class="tab active" @click="uploadForm.file='';dialogVisible = true">上传试卷</button>
         </div>
         <div class="search">
-            <input type="text" placeholder="搜索习题关键字" class="search-input" />
-            <button class="search-btn">搜索</button>
+            <input type="text" v-model="searchKeyword" placeholder="搜索习题关键字" class="search-input" />
+            <button class="search-btn" @click="filterPapers">搜索</button>
         </div>
     </div>
 
@@ -20,7 +20,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="(paper,index) in papers" :key="index">
+            <tr v-for="(paper,index) in filteredPapers" :key="index">
                 <td>{{ index + 1 }}</td>
                 <td>{{ paper.rname }}</td>
                 <td>{{ paper.rdesc }}</td>
@@ -102,6 +102,8 @@ const paperForm = ref({
     resource_description:'',
 });
 const uploadForm = ref({ file: null });
+const filteredPapers = ref([]);
+const searchKeyword = ref('');
 
 const clearPaperForm = () => {
     paperForm.value = {
@@ -124,6 +126,7 @@ const fetchPapers = async () => {
         let result = await paperListService(props.courseNo);
         if(result.status === 200) {
             papers.value = result.data.data.Uncategorized;
+            filteredPapers.value = papers.value;
         }
     } catch (err) {
         ElMessage.error('获取试卷失败');
@@ -171,6 +174,17 @@ const downloadPaper = (paper) => {
     link.href = downloadUrl;
     link.download = paper.rfile.split('/').pop(); 
     link.click();
+}
+
+const filterPapers = () => {
+    if(searchKeyword.value.trim() === ''){
+        filteredPapers.value = papers.value;
+    } else {
+        filteredPapers.value = papers.value.filter(paper => {
+            return paper.rname.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+                       paper.rdesc.toLowerCase().includes(searchKeyword.value.toLowerCase());
+        });
+    }
 }
 
 </script>

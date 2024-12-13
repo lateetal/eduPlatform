@@ -54,10 +54,10 @@
                       <span class="folder-name">{{folder.fname}}</span>
                       <div class="folder-btn">
                         <span>赞：{{ folder.likeNum }}</span>
-                        <el-button type="primary" @click="favorFolder(folder.fno)" v-if="username !== id">
+                        <el-button type="primary" @click.stop="favorFolder(folder.fno)" v-if="username !== id">
                           {{ isFavored(folder.fno)?'已收藏':'收藏' }}
                         </el-button>
-                        <el-button type="primary" @click="likeFolder(folder)">
+                        <el-button type="primary" @click.stop="likeFolder(folder)">
                           {{ folder.is_liked?'已点赞':'点赞' }}
                         </el-button>
                       </div>
