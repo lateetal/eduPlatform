@@ -134,7 +134,7 @@ class UpdateCourseIntro(APIView):
 
 class AIchat(APIView):
     def post(self, request):
-        client = ZhipuAI(api_key="2272f57760983b79497d3941b37b9cdc.deE7EZflxBR8gEJV")  # 请填写您自己的APIKey
+        client = ZhipuAI(api_key="7cc14f3ac1cd43ebb4fdad5cf11ce225.Jq1HHPCumnNNA6PA")  # 请填写您自己的APIKey
         # 从请求中获取用户输入
         user_input = request.data.get('input')
 

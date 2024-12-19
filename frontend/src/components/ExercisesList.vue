@@ -47,6 +47,7 @@
                 <el-select 
                     v-model="exerciseForm.question_type"
                     placeholder="选择题型"
+                    :disabled="dialogTitle==='查看习题'"
                 >
                     <el-option
                         v-for="(item,index) in questionTypes"
@@ -61,6 +62,7 @@
                 <el-select 
                     v-model="exerciseForm.difficulty"
                     placeholder="选择难度"
+                    :disabled="dialogTitle==='查看习题'"
                 >
                     <el-option
                         v-for="(item,index) in difficultyTypes"
@@ -75,6 +77,7 @@
                 <el-input 
                     v-model="exerciseForm.content" 
                     placeholder="请输入题干" 
+                    :disabled="dialogTitle==='查看习题'"
                 />
             </el-form-item>
 
@@ -82,6 +85,7 @@
                 <el-input 
                     v-model="exerciseForm.knowledge_point" 
                     placeholder = "请输入知识点"
+                    :disabled="dialogTitle==='查看习题'"
                 />
             </el-form-item>
 
@@ -90,40 +94,84 @@
                 label="选项"
             >
                 <!-- 如果是单选题，使用 el-radio-group -->
-                <el-radio-group v-if="exerciseForm.question_type === '单选题'" v-model="exerciseForm.correct_answer">
+                <el-radio-group 
+                    v-if="exerciseForm.question_type === '单选题'" 
+                    v-model="exerciseForm.correct_answer"
+                    :disabled="dialogTitle==='查看习题'"
+                >
                     <el-radio :label="'A'">
-                        <el-input v-model="exerciseForm.options.A" placeholder="请输入选项A"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.A" 
+                            placeholder="请输入选项A"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-radio>
                     <el-radio :label="'B'">
-                        <el-input v-model="exerciseForm.options.B" placeholder="请输入选项B"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.B" 
+                            placeholder="请输入选项B"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-radio>
                     <el-radio :label="'C'">
-                        <el-input v-model="exerciseForm.options.C" placeholder="请输入选项C"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.C" 
+                            placeholder="请输入选项C"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-radio>
                     <el-radio :label="'D'">
-                        <el-input v-model="exerciseForm.options.D" placeholder="请输入选项D"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.D" 
+                            placeholder="请输入选项D"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-radio>
                 </el-radio-group>
 
                 <!-- 如果是多选题，使用 el-checkbox-group -->
-                <el-checkbox-group v-else v-model="exerciseForm.correct_answer">
+                <el-checkbox-group 
+                    v-else 
+                    v-model="exerciseForm.correct_answer"
+                    :disabled="dialogTitle==='查看习题'"
+                >
                     <el-checkbox :label="'A'">
-                        <el-input v-model="exerciseForm.options.A" placeholder="请输入选项A"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.A" 
+                            placeholder="请输入选项A"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-checkbox>
                     <el-checkbox :label="'B'">
-                        <el-input v-model="exerciseForm.options.B" placeholder="请输入选项B"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.B" 
+                            placeholder="请输入选项B"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-checkbox>
                     <el-checkbox :label="'C'">
-                        <el-input v-model="exerciseForm.options.C" placeholder="请输入选项C"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.C" 
+                            placeholder="请输入选项C"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-checkbox>
                     <el-checkbox :label="'D'">
-                        <el-input v-model="exerciseForm.options.D" placeholder="请输入选项D"></el-input>
+                        <el-input 
+                            v-model="exerciseForm.options.D" 
+                            placeholder="请输入选项D"
+                            :disabled="dialogTitle==='查看习题'"
+                        ></el-input>
                     </el-checkbox>
                 </el-checkbox-group>
             </el-form-item>
 
             <el-form-item v-else label="答案">
-                <el-input v-model="exerciseForm.answer_explanation" placeholder="请输入答案" autosize />
+                <el-input 
+                    v-model="exerciseForm.answer_explanation" 
+                    placeholder="请输入答案" 
+                    :disabled="dialogTitle==='查看习题'"
+                    autosize />
             </el-form-item>
 
         </el-form>
